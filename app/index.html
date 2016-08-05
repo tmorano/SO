@@ -1,0 +1,29 @@
+<html ng-app="sistemasOperacionais">
+<body ng-controller="indexController">
+<head>
+    <meta charset="utf-8" />
+    <link href="lib/css/bootstrap.min.css" rel="stylesheet">
+    <title>Sistemas Operacionais - Tiago Morano</title>
+</head>
+<div class='panel panel-primary'>
+    <div class="text-center panel-heading">
+        <h1 class="panel-title">Sistemas Operacionais</h1>
+    </div>
+    <div class="panel-body text-right">
+        <div class="col-md-2">
+            <b>Algorithm</b>
+        </div>
+        <div class="col-md-2">
+            <select class="form-control" ng-model="algorithm"
+                    ng-options="algorithm for algorithm in algorithmOptions"></select>
+        </div>
+    </div>
+</div>
+</body>
+<script src="lib/js/angular.min.js"></script>
+<script src="lib/js/jquery.js"></script>
+<script src="lib/js/bootstrap.js"></script>
+<script src="lib/js/ui-bootstrap-tpls-1.3.3.min.js"></script>
+<script src="app.js"></script>
+<script src="controllers/indexController.js"></script>
+</html>
