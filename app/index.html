@@ -1,29 +1,75 @@
-<html ng-app="sistemasOperacionais">
+<html ng-app="sistemasOperacionais" xmlns="http://www.w3.org/1999/html">
 <body ng-controller="indexController">
 <head>
     <meta charset="utf-8" />
     <link href="lib/css/bootstrap.min.css" rel="stylesheet">
     <title>Sistemas Operacionais - Tiago Morano</title>
 </head>
-<div class='panel panel-primary'>
-    <div class="text-center panel-heading">
-        <h1 class="panel-title">Sistemas Operacionais</h1>
-    </div>
-    <div class="panel-body text-right">
-        <div class="col-md-2">
-            <b>Algorithm</b>
+</br>
+<div class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h1 class="panel-title">Sistemas Operacionais - Configuracoes</h1>
         </div>
-        <div class="col-md-2">
-            <select class="form-control" ng-model="algorithm"
-                    ng-options="algorithm for algorithm in algorithmOptions"></select>
+        <div class="panel-body">
+            <div class="col-md-1">
+                <b>Algoritmo</b>
+            </div>
+            <div class="col-md-2">
+                <select class="form-control" ng-model="algorithmSelected"
+                        ng-options="algorithm for algorithm in algorithmOptions"></select>
+            </div>
+            <div class="col-md-1">
+                <b>Cores</b>
+            </div>
+            <div class="col-md-1">
+                <input class="form-control" type="number" ng-maxlength="" min="1" max="64" ng-model="cores">
+            </div>
+            <div class="col-md-2">
+                <b>Processos</b>
+            </div>
+            <div class="col-md-1">
+                <input class="form-control" type="number" min="0" ng-model="numberOfProcess">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-default" ng-click="iniciar()">Iniciar!</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h1 class="panel-title">Processadores</h1>
+        </div>
+        <div class="panel-body">
+
         </div>
     </div>
 </div>
+
+
 </body>
+
+
+
 <script src="lib/js/angular.min.js"></script>
 <script src="lib/js/jquery.js"></script>
 <script src="lib/js/bootstrap.js"></script>
 <script src="lib/js/ui-bootstrap-tpls-1.3.3.min.js"></script>
+<script src="lib/js/moment.js"></script>
+<script src="lib/js/toastr.min.js"></script>
 <script src="app.js"></script>
 <script src="controllers/indexController.js"></script>
+
+
+<!-- Bootstrap Core CSS -->
+<link href="lib/css/bootstrap.min.css" rel="stylesheet">
+<link
+        href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"
+        rel="stylesheet">
+<!-- Toastr CSS -->
+<link href="lib/css/toastr.min.css" rel="stylesheet">
+<!-- Custom Fonts -->
+<link href="lib/css/font-awesome/css/font-awesome.min.css" rel="stylesheet"
+      type="text/css">
 </html>
