@@ -9,7 +9,7 @@
 <div class="panel-group">
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h1 class="panel-title">Sistemas Operacionais - Configuracoes</h1>
+            <b>Sistemas Operacionais - Configuracoes</b>
         </div>
         <div class="panel-body">
             <div class="col-md-1">
@@ -23,13 +23,13 @@
                 <b>Cores</b>
             </div>
             <div class="col-md-1">
-                <input class="form-control" type="number" ng-maxlength="" min="1" max="64" ng-model="cores">
+                <input class="form-control" type="number" ng-maxlength="" min="1" max="64" ng-model="cores" ng-blur="checkCores()">
             </div>
             <div class="col-md-2">
                 <b>Processos</b>
             </div>
             <div class="col-md-1">
-                <input class="form-control" type="number" min="0" ng-model="numberOfProcess">
+                <input class="form-control" type="number" min="0" ng-model="numberOfProcess" ng-blur="checkProcess()">
             </div>
             <div class="col-md-2">
                 <button class="btn btn-default" ng-click="iniciar()">Iniciar!</button>
@@ -42,15 +42,42 @@
             <h1 class="panel-title">Processadores</h1>
         </div>
         <div class="panel-body">
-
+            <div class="col-md-2" ng-repeat="core in coresArray track by $index">
+                <div class="panel panel-default">
+                    <div class="text-center panel-heading">
+                        <b>Processador {{(coresArray.indexOf(core) + 1)}}</b>
+                    </div>
+                    <div class="text-center panel-body">
+                        <img align="center" src="lib/images/cpu.png">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h1 class="panel-title">Processos</h1>
+        </div>
+        <div class="panel-body">
+            <div class="col-md-12" ng-repeat="process in processArray track by $index">
+                <div class="panel panel-default">
+                    <div class="text-center panel-heading">
+                        <b>Processo {{(processArray.indexOf(process) + 1)}}</b>
+                    </div>
+                    <div class="text-center panel-body">
+                        Id : {{process.id}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 </div>
 
 
 </body>
-
-
 
 <script src="lib/js/angular.min.js"></script>
 <script src="lib/js/jquery.js"></script>
@@ -61,12 +88,9 @@
 <script src="app.js"></script>
 <script src="controllers/indexController.js"></script>
 
-
 <!-- Bootstrap Core CSS -->
 <link href="lib/css/bootstrap.min.css" rel="stylesheet">
-<link
-        href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"
-        rel="stylesheet">
+<link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
 <!-- Toastr CSS -->
 <link href="lib/css/toastr.min.css" rel="stylesheet">
 <!-- Custom Fonts -->
