@@ -6,12 +6,13 @@ var indexController = function($scope) {
         $scope.algorithmOptions = ['Round Robin', 'Least Time to Go (LTG)', 'Merge Fit'];
         $scope.algorithmSelected = 'Round Robin';
         $scope.processStates = ['Pronto', 'Esperando', 'Executando'];
-        $scope.cores = 0;
+        $scope.cores = 1;
         $scope.counter = 0;
         $scope.coresArray = [];
         $scope.numberOfProcess = 0;
-        $scope.quantum = 0;
         $scope.processArray = [];
+        $scope.isProgramStarted = false;
+
     }
 
     $scope.checkCores = function () {
@@ -72,15 +73,6 @@ var indexController = function($scope) {
         return eachProcess;
     };
 
-    $scope.iniciar = function () {
-        if ($scope.cores < 1 || $scope.cores > 64) {
-            return toastr["error"]("Numero de processadores fora da faixa aceitavel");
-        }
-        if($scope.algorithmSelected == 'Robin Round'){
-            
-        }
-
-    };
 
     function getRandomInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;

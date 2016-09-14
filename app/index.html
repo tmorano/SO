@@ -31,9 +31,6 @@
             <div class="col-md-1">
                 <input class="form-control" type="number" min="0" ng-model="numberOfProcess" ng-blur="checkProcess()">
             </div>
-            <div class="col-md-2">
-                <button class="btn btn-default" ng-click="iniciar()">Iniciar!</button>
-            </div>
         </div>
     </div>
 
@@ -67,6 +64,7 @@
                     <th>Processo</th>
                     <th>Estado</th>
                     <th>Prioridade</th>
+                    <th>Tempo finalizar</th>
                     <th>Progresso</th>
                 </tr>
                 </thead>
@@ -75,9 +73,27 @@
                     <td>Processo {{$index + 1}}</td>
                     <td>{{process.processState}}</td>
                     <td>{{process.priority}}</td>
+                    <td>{{process.timeLeft}}s</td>
                     <td><uib-progressbar animate="true" value="process.completionPercent"  type="success"><b>{{process.completionPercent}}%</b></uib-progressbar></td>
                 </tr>
             </table>
+        </div>
+    </div>
+
+    <div class="panel panel-default" ng-if="algorithmSelected == 'Round Robin'" ng-controller="RobinRoundController">
+        <div class="panel-heading">
+            <b class="panel-heading">Round Robin</b>
+        </div>
+        <div class="panel-body">
+            <div class="col-md-1">
+                <b>Quantum :</b>
+            </div>
+            <div class="col-md-1">
+                <input class="form-control" type="number"  min="2" max="20" ng-model="quantum">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-default" ng-click="iniciar()">Iniciar!</button>
+            </div>
         </div>
     </div>
 
@@ -95,7 +111,7 @@
 <script src="lib/js/toastr.min.js"></script>
 <script src="app.js"></script>
 <script src="controllers/indexController.js"></script>
-<script src="controllers/RobinRoundController.js"></script>
+<script src="controllers/RoundRobinController.js"></script>
 
 <!-- Bootstrap Core CSS -->
 <link href="lib/css/bootstrap.min.css" rel="stylesheet">
