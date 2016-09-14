@@ -1,1 +1,1 @@
-var app = angular.module('sistemasOperacionais', []);
+var app = angular.module('sistemasOperacionais', ['ui.bootstrap']);

@@ -60,16 +60,24 @@
             <h1 class="panel-title">Processos</h1>
         </div>
         <div class="panel-body">
-            <div class="col-md-12" ng-repeat="process in processArray track by $index">
-                <div class="panel panel-default">
-                    <div class="text-center panel-heading">
-                        <b>Processo {{(processArray.indexOf(process) + 1)}}</b>
-                    </div>
-                    <div class="text-center panel-body">
-                        Id : {{process.id}}
-                    </div>
-                </div>
-            </div>
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>PID</th>
+                    <th>Processo</th>
+                    <th>Estado</th>
+                    <th>Prioridade</th>
+                    <th>Progresso</th>
+                </tr>
+                </thead>
+                <tr ng-repeat="process in processArray track by $index">
+                    <td>{{process.id}}</td>
+                    <td>Processo {{$index + 1}}</td>
+                    <td>{{process.processState}}</td>
+                    <td>{{process.priority}}</td>
+                    <td><uib-progressbar animate="true" value="process.completionPercent"  type="success"><b>{{process.completionPercent}}%</b></uib-progressbar></td>
+                </tr>
+            </table>
         </div>
     </div>
 
@@ -82,11 +90,12 @@
 <script src="lib/js/angular.min.js"></script>
 <script src="lib/js/jquery.js"></script>
 <script src="lib/js/bootstrap.js"></script>
-<script src="lib/js/ui-bootstrap-tpls-1.3.3.min.js"></script>
+<script src="lib/js/ui-bootstrap-tpls-2.1.3.min.js"></script>
 <script src="lib/js/moment.js"></script>
 <script src="lib/js/toastr.min.js"></script>
 <script src="app.js"></script>
 <script src="controllers/indexController.js"></script>
+<script src="controllers/RobinRoundController.js"></script>
 
 <!-- Bootstrap Core CSS -->
 <link href="lib/css/bootstrap.min.css" rel="stylesheet">

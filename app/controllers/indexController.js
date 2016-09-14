@@ -21,7 +21,8 @@ var indexController = function($scope) {
                 while ($scope.cores != $scope.coresArray.length) {
                     var id = $scope.counter;
                     var eachCore = {
-                        id: id
+                        id: id,
+                        state: 'Ocioso'
                     };
                     $scope.counter++;
                     $scope.coresArray.push(eachCore);
@@ -56,11 +57,14 @@ var indexController = function($scope) {
         var id = $scope.counter;
         var eachProcess = {
             id: id,
-            executionTime: getRandomInt(4, 20),
+            executionTime: getRandomInt(4,20),
             processState: 'Pronto',
+            runningTime : 0,
             priority: getRandomInt(0, 3),
             interval: 'TODO'
         };
+        eachProcess.completionPercent =  Math.round(eachProcess.runningTime/eachProcess.executionTime*100);
+        eachProcess.timeLeft = eachProcess.executionTime - eachProcess.runningTime;
         if ($scope.algorithmSelected == 'Least Time to Go (LTG)') {
             eachProcess.deadline = 'TODO';
         }
@@ -72,6 +76,10 @@ var indexController = function($scope) {
         if ($scope.cores < 1 || $scope.cores > 64) {
             return toastr["error"]("Numero de processadores fora da faixa aceitavel");
         }
+        if($scope.algorithmSelected == 'Robin Round'){
+            
+        }
+
     };
 
     function getRandomInt(min, max) {
@@ -79,5 +87,4 @@ var indexController = function($scope) {
     }
 
 };
-
 app.controller("indexController", ["$scope", indexController]);
