@@ -12,23 +12,29 @@ var RoundRobinController = function($scope, $interval) {
     };
 
     function startRoundRobin(){
+        var stop;
         var quantum =  $scope.quantum;
         while ($scope.processArray.length > 0){
             $scope.coresArray.forEach(function (eachCore) {
                 if(eachCore.state == 'Ocioso'){
-                    var eachProcess = $scope.processArray[0];
-                    eachProcess.runningTime = 6;
+                    $scope.processArray.forEach(function (eachProcess) {
+                        if(eachProcess.processState == 'Pronto'){
+                            eachCore.state = 'Executando';
+                            startProcess(stop,$scope.processArray[eachProcess], quantum);
+
+                        }
+                    })
                 }
             })
         }
     }
 
-    function startProcess(eachProcess, quantum){
-        var stop;
+    function startProcess(stop,eachProcess, quantum){
+        eachProcess.processState = 'Executando';
         if ( angular.isDefined(stop) ) return;
         stop = $interval(function () {
-            if(eachProcess.timeLeft > 0 && quantum > 0){
-
+            if(eachProcess.executionTime < quantum){
+            eachProcess.timeLeft -1;
             }
         })
 
