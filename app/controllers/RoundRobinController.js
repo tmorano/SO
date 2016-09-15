@@ -12,32 +12,31 @@ var RoundRobinController = function($scope, $interval) {
     };
 
     function startRoundRobin(){
-        var stop;
         var quantum =  $scope.quantum;
-        while ($scope.processArray.length > 0){
-            $scope.coresArray.forEach(function (eachCore) {
-                if(eachCore.state == 'Ocioso'){
-                    $scope.processArray.forEach(function (eachProcess) {
-                        if(eachProcess.processState == 'Pronto'){
-                            eachCore.state = 'Executando';
-                            startProcess(stop,eachProcess, quantum);
+        $scope.processArray.forEach(function (eachProcess) {
+            startProcess(eachProcess, quantum);
+        })
+    }
 
-                        }
-                    })
-                }
-            })
+    function startProcess(eachProcess, quantum){
+        if(eachProcess.processState != 'Finalizado') {
+            var timeToRun = quantum > eachProcess.timeLeft ? eachProcess.timeLeft : quantum;
+            var increaseCounter = function () {
+                eachProcess.runningTime += 1;
+                eachProcess.timeLeft -= 1;
+                eachProcess.completionPercent = Math.round(eachProcess.runningTime / eachProcess.executionTime * 100);
+                eachProcess.processState = eachProcess.completionPercent == 100 ? 'Finalizado' : 'Executando';
+                eachProcess.timeLeft = eachProcess.executionTime - eachProcess.runningTime;
+            }
+            $interval(increaseCounter, 1000, timeToRun);
         }
     }
 
-    function startProcess(stop,eachProcess, quantum){
-        eachProcess.processState = 'Executando';
-        var increaseCounter = function () {
-            eachProcess.runningTime = $timeout() + 1;
+    function checkProcessFinalizados(processArray ,eachProcess) {
+        if(eachProcess.completionPercent == 100){
+            eachProcess.processState = 'Pronto';
+            processArray.pop();
         }
-        $interval(increaseCounter, 1000);
-
-
     }
-
 }
 app.controller("RobinRoundController", ["$scope","$interval" ,RoundRobinController]);
