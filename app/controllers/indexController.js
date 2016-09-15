@@ -1,18 +1,18 @@
-var indexController = function($scope) {
+var indexController = function($scope, $interval) {
 
     initScopes();
 
     function initScopes() {
         $scope.algorithmOptions = ['Round Robin', 'Least Time to Go (LTG)', 'Merge Fit'];
         $scope.algorithmSelected = 'Round Robin';
-        $scope.processStates = ['Pronto', 'Esperando', 'Executando'];
+        $scope.processStates = ['Pronto', 'Executando', 'Finalizado', 'Abortado'];
         $scope.cores = 1;
         $scope.counter = 0;
         $scope.coresArray = [];
         $scope.numberOfProcess = 0;
         $scope.processArray = [];
         $scope.isProgramStarted = false;
-
+        $scope.quantum = 2;
     }
 
     $scope.checkCores = function () {

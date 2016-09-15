@@ -1,9 +1,9 @@
 var RoundRobinController = function($scope, $interval) {
-    $scope.quantum = 2;
-
     $scope.iniciar = function () {
         if ($scope.cores < 1 || $scope.cores > 64) {
             return toastr["error"]("Numero de processadores fora da faixa aceitavel");
+        }else if($scope.quantum < 2 || $scope.quantum > 20){
+            return toastr["error"]("Quantum fora da faixa aceitavel");
         }
         $scope.isProgramStarted = true;
         if($scope.algorithmSelected == 'Round Robin'){
@@ -20,7 +20,7 @@ var RoundRobinController = function($scope, $interval) {
                     $scope.processArray.forEach(function (eachProcess) {
                         if(eachProcess.processState == 'Pronto'){
                             eachCore.state = 'Executando';
-                            startProcess(stop,$scope.processArray[eachProcess], quantum);
+                            startProcess(stop,eachProcess, quantum);
 
                         }
                     })
@@ -31,14 +31,13 @@ var RoundRobinController = function($scope, $interval) {
 
     function startProcess(stop,eachProcess, quantum){
         eachProcess.processState = 'Executando';
-        if ( angular.isDefined(stop) ) return;
-        stop = $interval(function () {
-            if(eachProcess.executionTime < quantum){
-            eachProcess.timeLeft -1;
-            }
-        })
+        var increaseCounter = function () {
+            eachProcess.runningTime = $timeout() + 1;
+        }
+        $interval(increaseCounter, 1000);
+
 
     }
 
 }
-app.controller("RobinRoundController", ["$scope", RoundRobinController]);
+app.controller("RobinRoundController", ["$scope","$interval" ,RoundRobinController]);

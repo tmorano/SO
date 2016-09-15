@@ -31,6 +31,12 @@
             <div class="col-md-1">
                 <input class="form-control" type="number" min="0" ng-model="numberOfProcess" ng-blur="checkProcess()">
             </div>
+            <div class="col-md-1">
+                <b>Quantum :</b>
+            </div>
+            <div class="col-md-1">
+                <input class="form-control" type="number"  min="2" max="20" ng-model="quantum">
+            </div>
         </div>
     </div>
 
@@ -85,12 +91,7 @@
             <b class="panel-heading">Round Robin</b>
         </div>
         <div class="panel-body">
-            <div class="col-md-1">
-                <b>Quantum :</b>
-            </div>
-            <div class="col-md-1">
-                <input class="form-control" type="number"  min="2" max="20" ng-model="quantum">
-            </div>
+
             <div class="col-md-2">
                 <button class="btn btn-default" ng-click="iniciar()">Iniciar!</button>
             </div>
