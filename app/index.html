@@ -96,7 +96,7 @@
 
 
     <!-- Inicio da View Processos -->
-    <div class="panel panel-default">
+    <div class="panel panel-default" ng-controller="processController">
         <div class="panel-heading">
             <h1 class="panel-title">Processos</h1>
         </div>
@@ -105,7 +105,6 @@
                 <thead>
                 <tr>
                     <th>PID</th>
-                    <th>Processo</th>
                     <th>Estado</th>
                     <th>Prioridade</th>
                     <th>Tempo finalizar</th>
@@ -114,11 +113,10 @@
                 </thead>
                 <tr ng-repeat="process in getProcessos()">
                     <td>{{process.pid}}</td>
-                    <td>Processo {{$index + 1}}</td>
-                    <td>{{process.processState}}</td>
-                    <td>{{process.priority}}</td>
-                    <td>{{process.timeLeft}}s</td>
-                    <td><uib-progressbar animate="true" value="process.completionPercent"  type="success"><b>{{process.completionPercent}}%</b></uib-progressbar></td>
+                    <td>{{process.state}}</td>
+                    <td>{{process.prioridade}}</td>
+                    <td>{{process.tempoTotal - process.tempo}}s</td>
+                    <td><uib-progressbar animate="true" value="process.progress"  type="success"><b>{{process.completionPercent}}%</b></uib-progressbar></td>
                 </tr>
             </table>
         </div>

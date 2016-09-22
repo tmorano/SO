@@ -36,7 +36,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
 
             //Caso hajam processadores disponiveis
             if (currentProcessor) {
-                var processador = config.processadores[currentProcessor.id];
+                var processador = config.cores[currentProcessor.id];
 
                 var pct;
 
@@ -91,7 +91,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
         roundrobin.aptos = [[], [], [], []];
         roundrobin.quantum = config.quantum;
         roundrobin.config = config;
-        roundrobin.availableProcessors = angular.copy(config.processadores);
+        roundrobin.availableProcessors = angular.copy(config.cores);
 
         ultimaFila = 0;
     };

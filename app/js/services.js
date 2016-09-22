@@ -1,9 +1,9 @@
 sistemasOperacionais.factory('AlgorithmFactoryService', function (RoundRobinAlgorithmService) {
-    var algoritmo = {};
+    var algorithm = {};
 
-    algoritmo.construirAlgoritmo = function(tipo) {
+    algorithm.buildAlgorithm = function(value) {
         var service;
-        switch (tipo) {
+        switch (value) {
             case '1':
                 service = RoundRobinAlgorithmService;
         };
@@ -11,5 +11,5 @@ sistemasOperacionais.factory('AlgorithmFactoryService', function (RoundRobinAlgo
         return service;
     }
 
-    return algoritmo;
+    return algorithm;
 });
