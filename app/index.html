@@ -115,8 +115,8 @@
                     <td>{{process.pid}}</td>
                     <td>{{process.state}}</td>
                     <td>{{process.prioridade}}</td>
-                    <td>{{process.tempoTotal - process.tempo}}s</td>
-                    <td><uib-progressbar animate="true" value="process.progress"  type="success"><b>{{process.completionPercent}}%</b></uib-progressbar></td>
+                    <td>{{process.tempoTotal - process.tempoExecutado}}s</td>
+                    <td><uib-progressbar animate="true" value="process.progress"  type="success"><b>{{process.progress}}%</b></uib-progressbar></td>
                 </tr>
             </table>
         </div>

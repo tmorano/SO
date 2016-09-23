@@ -2,16 +2,18 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
     var service;
 
     $scope.processos = [];
-    $scope.aptos = [[], [], [], []]
+    $scope.filaDePrioridade = [[], [], [], []]
     $scope.config;
 
 
     $scope.$on('iniciar', function (events, args) {
         $scope.config = args;
+
+        //Associa objeto da fabrica para algoritmo especifico
         service = AlgorithmFactoryService.buildAlgorithm($scope.config.algoritmo);
         service.configurar(args);
         createProcess(service, args.processos);
-        $scope.aptos = service.aptos;
+        $scope.filaDePrioridade = service.filaDePrioridade;
 
         service.executar();
     });
@@ -22,27 +24,12 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
 
     var createProcess = function (service, processos) {
         $scope.getProcessos().length = 0;
-        $scope.aptos.length = 0;
-        var i;
+        $scope.filaDePrioridade.length = 0;
 
-        for (i = 0; i < processos; i++) {
+        for (var i = 0; i < processos; i++) {
             $scope.addProccess();
         }
     }
-
-    $scope.stateClass = function (row, type) {
-        var clazz = "success";
-        switch (row.state) {
-            case 'Aguardando':
-                clazz = "warning";
-                break;
-            case 'Executando':
-                clazz = "info active";
-                break;
-        }
-
-        return type + "-" + clazz;
-    };
 
     $scope.getProcessos = function () {
         return $scope.processos;
