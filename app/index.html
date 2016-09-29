@@ -44,7 +44,7 @@
             <div class="col-md-1">
                 <input class="form-control" type="number" ng-maxlength="" min="1" max="64" ng-disabled="config.running" ng-model="config.coresNumber">
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1">
                 <b>Processos</b>
             </div>
             <div class="col-md-1">
@@ -123,7 +123,7 @@
                     <td ng-show="config.algoritmo == 2">{{process.deadLine}}</td>
                     <td ng-show="config.algoritmo == 2">{{process.deadLineOriginal}}</td>
                     <td>{{process.tempoTotal - process.tempoExecutado}}s</td>
-                    <td><uib-progressbar animate="true" value="process.progress"  type="success"><b>{{process.progress}}%</b></uib-progressbar></td>
+                    <td><uib-progressbar animate="true" value="process.progress" type="{{process.progressStyle}}" ><b>{{process.progress}}%</b></uib-progressbar></td>
                 </tr>
             </table>
         </div>

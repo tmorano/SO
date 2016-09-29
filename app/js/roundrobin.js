@@ -46,7 +46,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                 return;
             }
             execRoundRobin(roundrobin.config)
-        }, -1);
+        }, 1000);
     };
 
     //Executa o processo
@@ -79,10 +79,12 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                             //Verifica se processo foi concluido
                             if (processo.tempoExecutado < processo.tempoTotal) {
                                 processo.state = 'Aguardando';
+                                processo.progressStyle = 'warning';
                                 roundrobin.filaDePrioridade[processo.prioridade].push(processo);
                             } else {
                                 processo.progress = 100;
                                 processo.state = 'Concluido';
+                                processo.progressStyle = 'success';
                             }
 
                         } else {
@@ -93,6 +95,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                             }
 
                             processo.state = 'Executando';
+                            processo.progressStyle = 'default';
                             processo.tempoExecutado += 1;
                             processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
                         }
@@ -107,13 +110,18 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
 
     var buscarProximoProcesso = function () {
         var processo;
-
+            // Verifico se a ultima fila processada esta dentro do tamanho da fila de prioridade
             if (ultimaFilaProcessada < 4) {
                 processo = roundrobin.filaDePrioridade[ultimaFilaProcessada].shift();
                 ultimaFilaProcessada += 1;
-                if (!processo && (roundrobin.filaDePrioridade[0].length || roundrobin.filaDePrioridade[1].length || roundrobin.filaDePrioridade[2].length || roundrobin.filaDePrioridade[3].length)) {
+                // Verifico se contem processo na fila de prioridades
+                if (!processo && (roundrobin.filaDePrioridade[0].length ||
+                                  roundrobin.filaDePrioridade[1].length ||
+                                  roundrobin.filaDePrioridade[2].length ||
+                                  roundrobin.filaDePrioridade[3].length)) {
                     processo = buscarProximoProcesso();
                 }
+                // Se a ultima fila processada foi a de prioridade 4 volta para o inicio
             } else if (ultimaFilaProcessada == 4) {
                 ultimaFilaProcessada = 0;
                 processo = buscarProximoProcesso();

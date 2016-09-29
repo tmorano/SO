@@ -68,6 +68,8 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                         ltg.filaDePrioridade.forEach(function (eachProcesso) {
                             if(eachProcesso.state != 'Executando' && eachProcesso.deadLine == 0){
                                 eachProcesso.state = 'Abortado';
+                                eachProcesso.progressStyle = 'danger';
+                                eachProcesso.progress = 100;
                             }else{
                                 eachProcesso.deadLine -=1;
                             }
@@ -84,6 +86,7 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                             if (processo.tempoExecutado == processo.tempoTotal) {
                                 processo.progress = 100;
                                 processo.state = 'Concluido';
+                                processo.progressStyle = 'success';
                             }
 
                         } else {
@@ -94,6 +97,7 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                             }
 
                             processo.state = 'Executando';
+                            processo.progressStyle = 'default';
                             processo.tempoExecutado += 1;
                             processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
                         }
