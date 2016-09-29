@@ -113,7 +113,13 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
     }
 
     var buscarProximoProcesso = function () {
-        return ltg.filaDePrioridade.shift();
+
+        var processo = ltg.filaDePrioridade.shift();
+        if(processo && processo.state == 'Abortado'){
+            processo = buscarProximoProcesso();
+        }
+
+     return processo;
     }
 
     function getRandomNum(min, max) {
