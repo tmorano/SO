@@ -68,6 +68,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
 
                 if (!core.timer) {
                     core.timer = $interval(function () {
+                        // Verifica se o core esta executando, se o ainda falta tempo no processo.
                         if (!(core.tempo && processo.tempoExecutado < processo.tempoTotal)) {
                             $interval.cancel(core.timer);
                             roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);

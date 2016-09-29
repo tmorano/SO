@@ -19,7 +19,15 @@ sistemasOperacionais.controller('indexController', function ($rootScope, $scope)
                 process: {}
             });
         }
+        if(!$scope.config.coresNumber || $scope.config.coresNumber < 1 || $scope.config.coresNumber > 64){
+            toastr["error"]("Invalid number of Cores.");
+            return
+        }else if($scope.config.processos < 1){
+            toastr["error"]("Invalid number of Processos.");
+            return
+        }
         $scope.config.running = true;
+
         $rootScope.$broadcast('iniciar', $scope.config);
     }
 

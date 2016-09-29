@@ -39,8 +39,4 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
         //Adicionando o processo dependendo do Algoritmo
         service.createProcess($scope.getProcessos());
     };
-
-    $scope.filterNaoExecutando = function(processo) {
-        return processo.prioridade === 0 && processo.state !== 'Executando';
-    }
 });
