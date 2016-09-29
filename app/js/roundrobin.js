@@ -45,13 +45,12 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                 $interval.cancel(func);
                 return;
             }
-
-            execFunction(roundrobin.config, func)
+            execRoundRobin(roundrobin.config)
         }, -1);
     };
 
     //Executa o processo
-    var execFunction = function (config) {
+    var execRoundRobin = function (config) {
         var processo = buscarProximoProcesso();
 
         if (processo) {
@@ -61,31 +60,21 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
 
             //Caso hajam processadores disponiveis
             if (currentProcessor) {
-                var processador = config.cores[currentProcessor.id];
+                var core = config.cores[currentProcessor.id];
 
-                processador.state = 'Executando';
-                processador.processo = processo;
-                processador.tempo = quantum;
+                core.state = 'Executando';
+                core.processo = processo;
+                core.tempo = quantum;
 
-                if (!processador.decreaseTime) {
-                    processador.decreaseTime = $interval(function () {
-                        if (processador.tempo && processo.tempoExecutado < processo.tempoTotal) {
-                            if (processador.tempo - 1 > 0) {
-                                processador.tempo -= 1;
-                            } else {
-                                processador.tempo = 0;
-                            }
-
-                            processo.state = 'Executando';
-                            processo.tempoExecutado += 1;
-                            processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
-                        } else {
-                            $interval.cancel(processador.decreaseTime);
-                            processador.state = 'Parado';
-                            processador.processo = undefined;
+                if (!core.timer) {
+                    core.timer = $interval(function () {
+                        if (!(core.tempo && processo.tempoExecutado < processo.tempoTotal)) {
+                            $interval.cancel(core.timer);
                             roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
-                            processador.decreaseTime = undefined;
-                            processador.tempo = 0;
+                            core.state = 'Parado';
+                            core.processo = undefined;
+                            core.timer = undefined;
+                            core.tempo = 0;
 
                             //Verifica se processo foi concluido
                             if (processo.tempoExecutado < processo.tempoTotal) {
@@ -95,10 +84,21 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                 processo.progress = 100;
                                 processo.state = 'Concluido';
                             }
+
+                        } else {
+                            if (core.tempo - 1 > 0) {
+                                core.tempo -= 1;
+                            } else {
+                                core.tempo = 0;
+                            }
+
+                            processo.state = 'Executando';
+                            processo.tempoExecutado += 1;
+                            processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
                         }
                     }, 1000);
                 }
-            } //Caso nao haja processador, devolver o apto para a lista
+            }
             else {
                 roundrobin.filaDePrioridade[processo.prioridade].push(processo);
             }
@@ -108,23 +108,18 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
     var buscarProximoProcesso = function () {
         var processo;
 
-        if (roundrobin.filaDePrioridade) {
             if (ultimaFilaProcessada < 4) {
                 processo = roundrobin.filaDePrioridade[ultimaFilaProcessada].shift();
                 ultimaFilaProcessada += 1;
                 if (!processo && (roundrobin.filaDePrioridade[0].length || roundrobin.filaDePrioridade[1].length || roundrobin.filaDePrioridade[2].length || roundrobin.filaDePrioridade[3].length)) {
                     processo = buscarProximoProcesso();
                 }
-            } else if (ultimaFilaProcessada >= 4) {
+            } else if (ultimaFilaProcessada == 4) {
                 ultimaFilaProcessada = 0;
                 processo = buscarProximoProcesso();
             }
-        }
         return processo;
     }
-
-
-
 
     function getRandomNum(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
