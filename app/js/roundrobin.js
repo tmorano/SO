@@ -65,16 +65,17 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                 core.state = 'Executando';
                 core.processo = processo;
                 core.tempo = quantum;
+                core.executando = false;
 
-                if (!core.timer) {
-                    core.timer = $interval(function () {
+                if (core.executando == false) {
+                    core.executando = $interval(function () {
                         // Verifica se o core esta executando, se o ainda falta tempo no processo.
                         if (!(core.tempo && processo.tempoExecutado < processo.tempoTotal)) {
-                            $interval.cancel(core.timer);
+                            $interval.cancel(core.executando);
                             roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
                             core.state = 'Parado';
                             core.processo = undefined;
-                            core.timer = undefined;
+                            core.executando = false;
                             core.tempo = 0;
 
                             //Verifica se processo foi concluido

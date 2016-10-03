@@ -61,10 +61,12 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                 core.state = 'Executando';
                 core.processo = processo;
                 core.tempo = processo.tempoTotal;
+                core.executando = false;
 
-                if (!core.timer) {
-                    core.timer = $interval(function () {
+                if (core.executando == false) {
+                    core.executando = $interval(function () {
 
+                        // Decrementando o DeadLine dos processos
                         ltg.filaDePrioridade.forEach(function (eachProcesso) {
                             if(eachProcesso.state != 'Executando' && eachProcesso.deadLine == 0){
                                 eachProcesso.state = 'Abortado';
@@ -76,11 +78,11 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                         })
                         // Verifica se o core esta executando, se o ainda falta tempo no processo e verifica se o estado nao eh abortado.
                         if (!(core.tempo && processo.tempoExecutado < processo.tempoTotal && processo.state != 'Abortado')) {
-                            $interval.cancel(core.timer);
+                            $interval.cancel(core.executando);
                             ltg.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
                             core.state = 'Parado';
                             core.processo = undefined;
-                            core.timer = undefined;
+                            core.executando = false;
                             core.tempo = 0;
                             //Processo sera executado ate o fim sem aguardar (Algoritmo nao preemptivo)
                             if (processo.tempoExecutado == processo.tempoTotal) {
