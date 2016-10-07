@@ -1,7 +1,7 @@
 sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interval) {
     var ltg = {};
 
-        ltg.availableProcessors = [];
+    ltg.coresLiberados = [];
 
     ltg.configurar = function(config){
         //Inclui fila de prioridade ordenado pelo deadLine
@@ -9,7 +9,7 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
         //Configuracoes do index
         ltg.config = config;
         // Processadores do Programa
-        ltg.availableProcessors = angular.copy(config.cores);
+        ltg.coresLiberados = angular.copy(config.cores);
     }
 
 
@@ -43,17 +43,15 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                 return;
             }
             execLTG(ltg.config)
-        }, 1000);
+        }, -1);
     }
-
-
 
     var execLTG = function(config){
 
         var processo = buscarProximoProcesso();
 
         if (processo) {
-            var currentProcessor = ltg.availableProcessors.shift();
+            var currentProcessor = ltg.coresLiberados.shift();
 
             if (currentProcessor) {
                 var core = config.cores[currentProcessor.id];
@@ -61,10 +59,10 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                 core.state = 'Executando';
                 core.processo = processo;
                 core.tempo = processo.tempoTotal;
-                core.executando = false;
+                core.interval = false;
 
-                if (core.executando == false) {
-                    core.executando = $interval(function () {
+                if (core.interval == false) {
+                    core.interval = $interval(function () {
 
                         // Decrementando o DeadLine dos processos
                         ltg.filaDePrioridade.forEach(function (eachProcesso) {
@@ -76,32 +74,29 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                                 eachProcesso.deadLine -=1;
                             }
                         })
-                        // Verifica se o core esta executando, se o ainda falta tempo no processo e verifica se o estado nao eh abortado.
-                        if (!(core.tempo && processo.tempoExecutado < processo.tempoTotal && processo.state != 'Abortado')) {
-                            $interval.cancel(core.executando);
-                            ltg.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
-                            core.state = 'Parado';
-                            core.processo = undefined;
-                            core.executando = false;
-                            core.tempo = 0;
-                            //Processo sera executado ate o fim sem aguardar (Algoritmo nao preemptivo)
-                            if (processo.tempoExecutado == processo.tempoTotal) {
-                                processo.progress = 100;
-                                processo.state = 'Concluido';
-                                processo.progressStyle = 'success';
-                            }
-
-                        } else {
-                            if (core.tempo - 1 > 0) {
-                                core.tempo -= 1;
-                            } else {
+                        // Verifica se o core esta executando, verifica se o estado do processo nao eh abortado.
+                        if(core.tempo > 0 && processo.state != 'Abortado'){
+                            var coreTempo = core.tempo - 1;
+                            if(coreTempo < 0){
                                 core.tempo = 0;
+                            }else{
+                                core.tempo --;
                             }
-
                             processo.state = 'Executando';
                             processo.progressStyle = 'default';
                             processo.tempoExecutado += 1;
                             processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
+                            //Processo sera executado ate o fim sem aguardar (Algoritmo nao preemptivo)
+                        }else if(processo.tempoExecutado == processo.tempoTotal){
+                            $interval.cancel(core.interval);
+                            ltg.coresLiberados.splice(currentProcessor.id, 0, currentProcessor);
+                            core.state = 'Parado';
+                            core.processo = undefined;
+                            core.interval = false;
+                            core.tempo = 0;
+                            processo.progress = 100;
+                            processo.state = 'Concluido';
+                            processo.progressStyle = 'success';
                         }
                     }, 1000);
                 }
@@ -121,7 +116,7 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
             processo = buscarProximoProcesso();
         }
 
-     return processo;
+        return processo;
     }
 
     function getRandomNum(min, max) {

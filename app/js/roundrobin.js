@@ -1,8 +1,7 @@
 sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) {
     var roundrobin = {};
 
-    var ultimaFilaProcessada = 0;
-
+    roundrobin.ultimaFilaProcessada = 0;
     roundrobin.availableProcessors = [];
 
     //Configura o servico especifico de Round Robin
@@ -46,7 +45,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                 return;
             }
             execRoundRobin(roundrobin.config)
-        }, 1000);
+        }, -1);
     };
 
     //Executa o processo
@@ -65,42 +64,44 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                 core.state = 'Executando';
                 core.processo = processo;
                 core.tempo = quantum;
-                core.executando = false;
+                core.interval = false;
 
-                if (core.executando == false) {
-                    core.executando = $interval(function () {
-                        // Verifica se o core esta executando, se o ainda falta tempo no processo.
-                        if (!(core.tempo && processo.tempoExecutado < processo.tempoTotal)) {
-                            $interval.cancel(core.executando);
-                            roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
-                            core.state = 'Parado';
-                            core.processo = undefined;
-                            core.executando = false;
-                            core.tempo = 0;
+                if (core.interval == false) {
+                    core.interval = $interval(function () {
 
-                            //Verifica se processo foi concluido
-                            if (processo.tempoExecutado < processo.tempoTotal) {
-                                processo.state = 'Aguardando';
-                                processo.progressStyle = 'warning';
-                                roundrobin.filaDePrioridade[processo.prioridade].push(processo);
-                            } else {
-                                processo.progress = 100;
-                                processo.state = 'Concluido';
-                                processo.progressStyle = 'success';
-                            }
-
-                        } else {
-                            if (core.tempo - 1 > 0) {
-                                core.tempo -= 1;
-                            } else {
+                        if(core.tempo > 0 && processo.tempoExecutado < processo.tempoTotal){
+                            var coreTempo = core.tempo - 1;
+                            if(coreTempo < 0){
                                 core.tempo = 0;
+                            }else{
+                                core.tempo --;
                             }
-
                             processo.state = 'Executando';
                             processo.progressStyle = 'default';
                             processo.tempoExecutado += 1;
                             processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
+                        }else if(core.tempo == 0 && processo.tempoExecutado < processo.tempoTotal){
+                            $interval.cancel(core.interval);
+                            roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
+                            processo.state = 'Aguardando';
+                            processo.progressStyle = 'warning';
+                            roundrobin.filaDePrioridade[processo.prioridade].push(core.processo);
+                            core.state = 'Parado'
+                            core.processo = undefined;
+                            core.interval = false;
+                            core.tempo = 0;
+                        }else if(processo.tempoExecutado == processo.tempoTotal){
+                            $interval.cancel(core.interval);
+                            roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
+                            core.state = 'Parado'
+                            core.processo = undefined;
+                            core.interval = false;
+                            core.tempo = 0;
+                            processo.progress = 100;
+                            processo.state = 'Concluido';
+                            processo.progressStyle = 'success';
                         }
+
                     }, 1000);
                 }
             }
@@ -110,24 +111,22 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
         }
     };
 
+
+
     var buscarProximoProcesso = function () {
         var processo;
-            // Verifico se a ultima fila processada esta dentro do tamanho da fila de prioridade
-            if (ultimaFilaProcessada < 4) {
-                processo = roundrobin.filaDePrioridade[ultimaFilaProcessada].shift();
-                ultimaFilaProcessada += 1;
-                // Verifico se contem processo na fila de prioridades
-                if (!processo && (roundrobin.filaDePrioridade[0].length ||
-                                  roundrobin.filaDePrioridade[1].length ||
-                                  roundrobin.filaDePrioridade[2].length ||
-                                  roundrobin.filaDePrioridade[3].length)) {
-                    processo = buscarProximoProcesso();
-                }
-                // Se a ultima fila processada foi a de prioridade 4 volta para o inicio
-            } else if (ultimaFilaProcessada == 4) {
-                ultimaFilaProcessada = 0;
-                processo = buscarProximoProcesso();
-            }
+        if(roundrobin.filaDePrioridade[0].length == 0
+            && roundrobin.filaDePrioridade[1].length == 0
+            && roundrobin.filaDePrioridade[2].length == 0
+            && roundrobin.filaDePrioridade[3].length == 0){
+            return processo = buscarProximoProcesso();
+        }else if(roundrobin.ultimaFilaProcessada < 4){
+            processo = roundrobin.filaDePrioridade[roundrobin.ultimaFilaProcessada].shift();
+            roundrobin.ultimaFilaProcessada += 1 ;
+        }else if(roundrobin.ultimaFilaProcessada == 4){
+            roundrobin.ultimaFilaProcessada = 0;
+            return buscarProximoProcesso();
+        }
         return processo;
     }
 
