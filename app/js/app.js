@@ -1,1 +1,1 @@
-var sistemasOperacionais = angular.module('sistemasOperacionais', ['ui.bootstrap', 'chart.js'])
+var sistemasOperacionais = angular.module('sistemasOperacionais', ['ui.bootstrap', 'highcharts-ng'])
