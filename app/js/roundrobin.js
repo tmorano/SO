@@ -1,4 +1,4 @@
-sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) {
+sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, MemoryAlgorithmFactoryService) {
     var roundrobin = {};
 
     roundrobin.ultimaFilaProcessada = 0;
@@ -14,10 +14,12 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
         roundrobin.config = config;
         // Processadores do Programa
         roundrobin.availableProcessors = angular.copy(config.cores);
+
+
     };
 
     // Cria processo especifico para o Round Robin
-    roundrobin.createProcess = function (scopeProccesses) {
+    roundrobin.createProcess = function (scopeProccesses, memoryService) {
         var prioridade = getRandomNum(0,3);
         var pid = scopeProccesses.length;
         var proc = {
@@ -33,6 +35,9 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
         //Adiciona na fila de prioridades
         roundrobin.filaDePrioridade[prioridade].push(proc);
         scopeProccesses.push(proc);
+        // Adiciona na memoria
+        memoryService.adicionarNaMemoria(proc);
+
         //Retorna processo para scope
         return proc;
     };
@@ -45,7 +50,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                 return;
             }
             execRoundRobin(roundrobin.config)
-        }, -1);
+        }, 500);
     };
 
     //Executa o processo
@@ -119,7 +124,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
             && roundrobin.filaDePrioridade[1].length == 0
             && roundrobin.filaDePrioridade[2].length == 0
             && roundrobin.filaDePrioridade[3].length == 0){
-            return processo = buscarProximoProcesso();
+            return undefined;
         }else if(roundrobin.ultimaFilaProcessada < 4){
             processo = roundrobin.filaDePrioridade[roundrobin.ultimaFilaProcessada].shift();
             roundrobin.ultimaFilaProcessada += 1 ;

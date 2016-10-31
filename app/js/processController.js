@@ -1,5 +1,6 @@
-sistemasOperacionais.controller('processController', function ($rootScope, $scope, $interval, AlgorithmFactoryService) {
+sistemasOperacionais.controller('processController', function ($rootScope, $scope, $interval, AlgorithmFactoryService, MemoryAlgorithmFactoryService) {
     var service;
+    var memoryService;
 
     $scope.processos = [];
     $scope.filaDePrioridade = [[], [], [], []]
@@ -11,8 +12,10 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
 
         //Associa objeto da fabrica para algoritmo especifico
         service = AlgorithmFactoryService.buildAlgorithm($scope.config.algoritmo);
+        memoryService = MemoryAlgorithmFactoryService.buildAlgorithm($scope.config.memoryAlgoritmo);
         service.configurar(args);
-        createProcess(service, args.processos);
+        memoryService.iniciarMemoria(args);
+        createProcess(service, memoryService, args.processos);
         $scope.filaDePrioridade = service.filaDePrioridade;
 
         service.executar();
@@ -22,7 +25,7 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
         $scope.getProcessos().length = 0;
     });
 
-    var createProcess = function (service, processos) {
+    var createProcess = function (service, memoryService, processos) {
         $scope.getProcessos().length = 0;
         $scope.filaDePrioridade.length = 0;
 
@@ -37,6 +40,6 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
 
     $scope.addProccess = function () {
         //Adicionando o processo dependendo do Algoritmo
-        service.createProcess($scope.getProcessos());
+        service.createProcess($scope.getProcessos(), memoryService);
     };
 });

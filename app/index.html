@@ -14,9 +14,10 @@
 
     <!-- Scripts Customizados -->
     <script src="js/app.js"></script>
+    <script src="js/services.js"></script>
     <script src="js/roundrobin.js"></script>
     <script src="js/LeastTimeToGoAlgorithmService.js"></script>
-    <script src="js/services.js"></script>
+    <script src="js/bestFit.js"></script>
     <script src="js/indexController.js"></script>
     <script src="js/processController.js"></script>
     <!-- CSS -->
@@ -33,35 +34,51 @@
             <b>Sistemas Operacionais - Configuracoes</b>
         </div>
         <div class="panel-body">
-            <div class="col-md-1">
-                <b>Algoritmo</b>
-            </div>
-            <div class="col-md-2">
-                <select ng-model="config.algoritmo" ng-disabled="config.running" class="form-control">
-                    <option value="1">Round Robin</option>
-                    <option value="2">Least Time to Go</option>
-                </select>
-            </div>
-            <div class="col-md-1">
-                <b>Cores</b>
-            </div>
-            <div class="col-md-1">
-                <input class="form-control" type="number" ng-maxlength="" min="1" max="64" ng-disabled="config.running" ng-model="config.coresNumber">
-            </div>
-            <div class="col-md-1">
-                <b>Processos</b>
-            </div>
-            <div class="col-md-1">
-                <input class="form-control" type="number" min="0" ng-disabled="config.running" ng-model="config.processos">
-            </div>
-            <div class="col-md-1" ng-show="config.algoritmo == 1">
-                <b>Quantum :</b>
-            </div>
-            <div class="col-md-1" ng-disabled="config.running" ng-show="config.algoritmo == 1">
-                <input class="form-control" type="number"  min="2" max="20" ng-disabled="config.running" ng-model="config.quantum">
+            <div class="panel-default col-md-2">
+                <div class="panel-heading"><div class="text-center"><b>Algoritmo Alocação</b></div></br>
+                    <select ng-model="config.algoritmo" ng-disabled="config.running" class="form-control">
+                        <option value="1">Round Robin</option>
+                        <option value="2">Least Time to Go</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="col-md-2">
+            <div class="panel-default col-md-2">
+                <div class="panel-heading"><div class="text-center"><b>Algoritmo Memória</b></div></br>
+                    <select ng-model="config.memoryAlgoritmo" ng-disabled="config.running" class="form-control">
+                        <option value="1">Best Fit</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel-default col-md-2">
+                <div class="panel-heading">
+                    <div class="text-center">
+                        <b>Cores</b>
+                    </div>
+                    </br>
+                    <input class="form-control" type="number" ng-maxlength="" min="1" max="64" ng-disabled="config.running" ng-model="config.coresNumber">
+                </div>
+            </div>
+
+            <div class="panel-default col-md-2">
+                <div class="panel-heading">
+                    <div class="text-center">
+                        <b>Processos</b>
+                    </div>
+                    </br>
+                    <input class="form-control" type="number" min="0" ng-disabled="config.running" ng-model="config.processos">
+                </div>
+            </div>
+
+            <div class="panel-default col-md-2" ng-show="config.algoritmo == 1">
+                <div class="panel-heading"><div class="text-center"><b>Quantum</b></div></br>
+                    <input class="form-control" type="number"  min="2" max="20" ng-disabled="config.running" ng-model="config.quantum">
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                </br>
                 <input type="submit" value="Iniciar" ng-click="createCores()" class="btn btn-primary">
                 <a class="btn btn-danger" ng-click="parar()">Parar</a>
             </div>
@@ -136,11 +153,12 @@
         </div>
     </div>
     </br>
+    <!-- View de Memoria-->
     <div class="col-lg-6 col-sm-12">
         <div class="panel-default">
             <div class="panel-heading">Memória Disponível</div>
             <div class=panel-body>
-                <canvas id="line" class="chart chart-line" chart-data="data"
+                <canvas id="memoria" class="chart chart-line" chart-data="data"
                         chart-labels="labels" chart-series="series" chart-options="options"
                         chart-dataset-override="datasetOverride" chart-click="onClick">
                 </canvas>
@@ -151,7 +169,7 @@
         <div class="panel-default">
             <div class="panel-heading">Processos</div>
             <div class=panel-body>
-                <canvas id="line" class="chart chart-line" chart-data="data"
+                <canvas id="processos" class="chart chart-line" chart-data="data"
                         chart-labels="labels" chart-series="series" chart-options="options"
                         chart-dataset-override="datasetOverride" chart-click="onClick">
                 </canvas>
