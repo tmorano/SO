@@ -7,7 +7,7 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
     });
 
 
-    $scope.arrayOfProcessMemory = {
+    $scope.config.arrayOfProcessMemory = {
         options: {
             chart: {
                 type: 'bar',
@@ -19,14 +19,20 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
             }
         },
         series: [{
-            name: $scope.config.memoryBlock[0],
-            data: $scope.config.memoryBlock
+            name: 'John',
+            data: [5]
+        }, {
+            name: 'Jane',
+            data: [2]
+        }, {
+            name: 'Joe',
+            data: [3]
         }],
         title: {
             text: 'Processos'
         },
         xAxis: {
-            categories: ['MemoryBlock']
+            categories: ['Apples']
         },
         yAxis: {
             min: 0,

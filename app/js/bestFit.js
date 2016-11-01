@@ -16,7 +16,7 @@ sistemasOperacionais.factory('BestFitService', function () {
                 eachBlock.processo = processo;
                 bestFit.config.totalMemory -= processo.memory;
                 memoryAllocated = true;
-            }else if(eachBlock.processo.pid == processo.pid){
+            }else if(eachBlock.processo != undefined && eachBlock.processo.pid == processo.pid){
                 memoryAllocated = true;
             }
         })
@@ -28,6 +28,11 @@ sistemasOperacionais.factory('BestFitService', function () {
                     tamanho: processo.memory,
                     processo: processo
                 }
+                var teste = {
+                    name : 'Processo ' + processo.pid,
+                    data : [processo.memory]
+                }
+                bestFit.config.arrayOfProcessMemory.series.push(teste);
                 bestFit.memoryBlock.push(newBlock);
                 bestFit.config.totalMemory -= processo.memory;
             }else{
