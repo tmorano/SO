@@ -18,7 +18,7 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
         createProcess(service, memoryService, args.processos);
         $scope.filaDePrioridade = service.filaDePrioridade;
 
-        service.executar();
+        service.executar(memoryService);
     });
 
     $scope.$on('parar', function (events, args) {

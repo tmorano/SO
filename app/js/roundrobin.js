@@ -29,7 +29,8 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
             state: 'Pronto',
             prioridade: prioridade,
             tempoExecutado: 0,
-            tempoTotal: getRandomNum(4,20)
+            tempoTotal: getRandomNum(4,20),
+            memory : getRandomNum(16, 128)
         }
 
         //Adiciona na fila de prioridades
@@ -42,19 +43,19 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
         return proc;
     };
 
-    roundrobin.executar = function () {
+    roundrobin.executar = function (memoryService) {
         var func = $interval(function () {
             // Verifica se o algoritmo esta rodando
             if (!roundrobin.config.running) {
                 $interval.cancel(func);
                 return;
             }
-            execRoundRobin(roundrobin.config)
+            execRoundRobin(roundrobin.config, memoryService)
         }, 500);
     };
 
     //Executa o processo
-    var execRoundRobin = function (config) {
+    var execRoundRobin = function (config, memoryService) {
         var processo = buscarProximoProcesso();
 
         if (processo) {
@@ -105,6 +106,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
                             processo.progress = 100;
                             processo.state = 'Concluido';
                             processo.progressStyle = 'success';
+                            memoryService.encerrarProcesso(processo);
                         }
 
                     }, 1000);

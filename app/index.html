@@ -155,19 +155,21 @@
     </div>
     </br>
     <!-- View de Memoria-->
-    <div class="col-lg-6 col-sm-12" ng-controller="memoryController">
-        <div class="panel-default">
-            <div class="panel-heading">Memória Disponível</div>
-            <div class=panel-body>
-                <highchart class="chart" config="totalMemoryChart" class="span9"></highchart>
+    <div ng-controller = "memoryController" ng-show="config.running">
+        <div class="col-lg-6 col-sm-12">
+            <div class="panel-default">
+                <div class="panel-heading">Memória Disponível</div>
+                <div class=panel-body>
+                    <highchart class="chart" config="totalMemoryChart" class="span9"></highchart>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-lg-6 col-sm-12">
-        <div class="panel-default">
-            <div class="panel-heading">Processos</div>
-            <div class=panel-body>
-                <highchart class="chart" config="chartConfig" class="span9"></highchart>
+        <div class="col-lg-6 col-sm-12">
+            <div class="panel-default">
+                <div class="panel-heading">Processos</div>
+                <div class=panel-body>
+                    <highchart class="chart" config="arrayOfProcessMemory" class="span9"></highchart>
+                </div>
             </div>
         </div>
     </div>
