@@ -19,20 +19,14 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
             }
         },
         series: [{
-            name: 'Processo 1',
-            data: [5, 3, 4, 7, 2]
-        }, {
-            name: 'Processo 2',
-            data: [2, 2, 3, 2, 1]
-        }, {
-            name: 'Processo 3',
-            data: [3, 4, 4, 2, 5]
+            name: $scope.config.memoryBlock[0],
+            data: $scope.config.memoryBlock
         }],
         title: {
             text: 'Processos'
         },
         xAxis: {
-            categories: ['Array 1', 'Array 2', 'Array 3', 'Array 4', 'Array 5']
+            categories: ['MemoryBlock']
         },
         yAxis: {
             min: 0,

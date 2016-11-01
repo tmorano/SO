@@ -4,6 +4,7 @@ sistemasOperacionais.controller('indexController', function ($rootScope, $scope)
         algoritmo: "1",
         memoryAlgoritmo : "1",
         totalMemory : 1024,
+        memoryBlock: [],
         quantum: 1,
         processos: 1,
         processadores: [],

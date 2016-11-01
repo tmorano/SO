@@ -36,9 +36,6 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
         //Adiciona na fila de prioridades
         roundrobin.filaDePrioridade[prioridade].push(proc);
         scopeProccesses.push(proc);
-        // Adiciona na memoria
-        memoryService.adicionarNaMemoria(proc);
-
         //Retorna processo para scope
         return proc;
     };
@@ -66,6 +63,8 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
             //Caso hajam processadores disponiveis
             if (currentProcessor) {
                 var core = config.cores[currentProcessor.id];
+                // Adiciona na memoria
+                memoryService.adicionarNaMemoria(processo);
 
                 core.state = 'Executando';
                 core.processo = processo;
