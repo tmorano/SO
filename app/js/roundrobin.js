@@ -74,28 +74,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
                 if (core.interval == false) {
                     core.interval = $interval(function () {
 
-                        if(core.tempo > 0 && processo.tempoExecutado < processo.tempoTotal){
-                            var coreTempo = core.tempo - 1;
-                            if(coreTempo < 0){
-                                core.tempo = 0;
-                            }else{
-                                core.tempo --;
-                            }
-                            processo.state = 'Executando';
-                            processo.progressStyle = 'default';
-                            processo.tempoExecutado += 1;
-                            processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
-                        }else if(core.tempo == 0 && processo.tempoExecutado < processo.tempoTotal){
-                            $interval.cancel(core.interval);
-                            roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
-                            processo.state = 'Aguardando';
-                            processo.progressStyle = 'warning';
-                            roundrobin.filaDePrioridade[processo.prioridade].push(core.processo);
-                            core.state = 'Parado'
-                            core.processo = undefined;
-                            core.interval = false;
-                            core.tempo = 0;
-                        }else if(processo.tempoExecutado == processo.tempoTotal){
+                        if(processo.state == 'Abortado'){
                             $interval.cancel(core.interval);
                             roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
                             core.state = 'Parado'
@@ -103,9 +82,42 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
                             core.interval = false;
                             core.tempo = 0;
                             processo.progress = 100;
-                            processo.state = 'Concluido';
-                            processo.progressStyle = 'success';
-                            memoryService.encerrarProcesso(processo);
+                            processo.progressStyle = 'danger';
+
+                        }else {
+                            if (core.tempo > 0 && processo.tempoExecutado < processo.tempoTotal) {
+                                var coreTempo = core.tempo - 1;
+                                if (coreTempo < 0) {
+                                    core.tempo = 0;
+                                } else {
+                                    core.tempo--;
+                                }
+                                processo.state = 'Executando';
+                                processo.progressStyle = 'default';
+                                processo.tempoExecutado += 1;
+                                processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
+                            } else if (core.tempo == 0 && processo.tempoExecutado < processo.tempoTotal) {
+                                $interval.cancel(core.interval);
+                                roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
+                                processo.state = 'Aguardando';
+                                processo.progressStyle = 'warning';
+                                roundrobin.filaDePrioridade[processo.prioridade].push(core.processo);
+                                core.state = 'Parado'
+                                core.processo = undefined;
+                                core.interval = false;
+                                core.tempo = 0;
+                            } else if (processo.tempoExecutado == processo.tempoTotal) {
+                                $interval.cancel(core.interval);
+                                roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
+                                core.state = 'Parado'
+                                core.processo = undefined;
+                                core.interval = false;
+                                core.tempo = 0;
+                                processo.progress = 100;
+                                processo.state = 'Concluido';
+                                processo.progressStyle = 'success';
+                                memoryService.encerrarProcesso(processo);
+                            }
                         }
 
                     }, 1000);

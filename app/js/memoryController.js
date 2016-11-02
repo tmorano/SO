@@ -18,21 +18,12 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
                 }
             }
         },
-        series: [{
-            name: 'John',
-            data: [5]
-        }, {
-            name: 'Jane',
-            data: [2]
-        }, {
-            name: 'Joe',
-            data: [3]
-        }],
+        series: [],
         title: {
             text: 'Processos'
         },
         xAxis: {
-            categories: ['Apples']
+            categories: ['Memory Blocks']
         },
         yAxis: {
             min: 0,
@@ -42,7 +33,8 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
         },
         legend : {
           reversed : true
-        }
+        },
+        size: {}
     }
 
 
@@ -83,9 +75,6 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
                 width: 1,
                 color: '#808080'
             }]
-        },
-        credits: {
-            enabled: true
         },
         loading: false,
         size: {}
