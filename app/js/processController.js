@@ -3,7 +3,7 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
     var memoryService;
 
     $scope.processos = [];
-    $scope.filaDePrioridade = [[], [], [], []]
+    $scope.filaDePrioridade = [[], [], [], []];
     $scope.config;
 
 
@@ -11,10 +11,12 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
         $scope.config = args;
 
         //Associa objeto da fabrica para algoritmo especifico
+
         service = AlgorithmFactoryService.buildAlgorithm($scope.config.algoritmo);
         memoryService = MemoryAlgorithmFactoryService.buildAlgorithm($scope.config.memoryAlgoritmo);
         service.configurar(args);
         memoryService.iniciarMemoria(args);
+
         createProcess(service, memoryService, args.processos);
         $scope.filaDePrioridade = service.filaDePrioridade;
 

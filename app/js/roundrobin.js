@@ -30,7 +30,10 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
             prioridade: prioridade,
             tempoExecutado: 0,
             tempoTotal: getRandomNum(4,20),
-            memory : getRandomNum(16, 128)
+            memory : getRandomNum(16, 128),
+            chance: ()=>{
+              return Math.random() > 0.79
+            }
         }
 
         //Adiciona na fila de prioridades
