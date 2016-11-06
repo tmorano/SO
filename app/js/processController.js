@@ -11,6 +11,9 @@ sistemasOperacionais.controller('processController',
 
     $scope.$on('iniciar', function (events, args) {
         $scope.config = args;
+
+        //Associa objeto da fabrica para algoritmo especifico
+
         service = AlgorithmFactoryService.buildAlgorithm($scope.config.algoritmo);
         memoryService = MemoryAlgorithmFactoryService.buildAlgorithm($scope.config.memoryAlgoritmo);
         service.configurar(args);
