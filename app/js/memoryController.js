@@ -96,4 +96,42 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
     }
 
     addPoint();
-});
+})
+ .service('MemoryHelper',function(){
+     var memory;
+     return {
+        setMemory: function(mem){
+          memory = mem
+        },
+        isAlocado: function(processo){
+          return !memory.blocks.every((block)=>{
+            if(block.processo && processo.id == processo.id ){
+              return false;
+            }else{
+              return true;
+            }
+          })
+        },
+        isFull: function(processo){
+          return processo.memory > memory.totalSize || memory.size < 1
+        },
+        aumentarMemoria: function(processo,min,max){
+          size = Math.floor(Math.random() * (max - min + 1)) + min;
+          processo.memory += size;
+          return size;
+        },
+        sort: function(){
+          return memory.blocks.sort((a,b)=>{
+            return b.size - a.size;
+          })
+        },
+        indexOf: function(lista,processo){
+          for(var i = 0;i < lista.length;i++){
+            if(lista[i].processo && lista[i].processo.pid == processo.pid){
+              return i;
+            }
+          }
+          return -1;
+        }
+     }
+ });

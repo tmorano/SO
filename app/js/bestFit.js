@@ -1,58 +1,33 @@
-sistemasOperacionais.factory('BestFitService', function () {
+sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
     var bestFit = {};
 
-    bestFit.iniciarMemoria = function (args) {
-        bestFit.config = args;
-        bestFit.memoryBlock = args.memoryBlock;
-        bestFit.memory = {
-          totalSize: 1024,
-          size: 1024,
-          blocks: []
-        };
-        bestFit.count = {
-            totalBlockMemory : bestFit.config.totalMemory
-        };
-
-    }
-
-    bestFit.isAlocado = function(processo){
-      var alocado = false;
-      this.memory.blocks.forEach(function(p){
-        if(p.processo && p.processo.pid == processo.pid){
-          alocado = true;
-        }
-      })
-      return alocado;
-    }
-
     bestFit.adicionarNaMemoria = function (processo) {
-      isAlocado = this.isAlocado(processo);
+      isAlocado = MemoryHelper.isAlocado(processo);
       isAumentouMemoria = processo.chance() && isAlocado;
 
       if(isAumentouMemoria){
-        processo.memory += ((min,max)=>{
-          return Math.floor(Math.random() * (max - min + 1)) + min
-        })(16,128);
+        MemoryHelper.aumentarMemoria(processo.memory)
       }
 
       if(isAlocado && !isAumentouMemoria) return;
 
-      if(processo.memory > this.memory.totalSize || this.memory.size < 1){
+      if(MemoryHelper.isFull(processo)){
         processo.state = 'Abortado';
         return;
       }
 
-      orderedBlocks = this.memory.blocks.sort(function(a,b){
-        return b.size - a.size;
-      })
+      orderedBlocks = MemoryHelper.sort();
 
       bestBlock = null;
       // encontra bloco que se aproxima em tamanho do processo
       orderedBlocks.forEach(function(block){
+        // encontra um bloco vazio
         if(!isAumentouMemoria && !block.processo && block.size >= processo.memory){
           bestBlock = block;
           return;
-        }else if(block.processo && block.processo.pid == processo.pid){
+        }
+        // encontra o bloco em que o atual processo que aumentou está
+        else if(block.processo && block.processo.pid == processo.pid){
           bestBlock = block;
           return;
         }
