@@ -1,58 +1,24 @@
-sistemasOperacionais.factory('BestFitService', function () {
+sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
     var bestFit = {};
 
-    bestFit.iniciarMemoria = function (args) {
-        bestFit.config = args;
-        bestFit.memoryBlock = args.memoryBlock;
-        bestFit.memory = {
-          totalSize: 1024,
-          size: 1024,
-          blocks: []
-        };
-        bestFit.count = {
-            totalBlockMemory : bestFit.config.totalMemory
-        };
-
-    }
-
-    bestFit.isAlocado = function(processo){
-      var alocado = false;
-      this.memory.blocks.forEach(function(p){
-        if(p.processo && p.processo.pid == processo.pid){
-          alocado = true;
-        }
-      })
-      return alocado;
-    }
-
     bestFit.adicionarNaMemoria = function (processo) {
-      isAlocado = this.isAlocado(processo);
-      isAumentouMemoria = processo.chance() && isAlocado;
+      isAlocado = MemoryHelper.isAlocado(processo);
 
-      if(isAumentouMemoria){
-        processo.memory += ((min,max)=>{
-          return Math.floor(Math.random() * (max - min + 1)) + min
-        })(16,128);
-      }
+      if(isAlocado) return;
 
-      if(isAlocado && !isAumentouMemoria) return;
-
-      if(processo.memory > this.memory.totalSize || this.memory.size < 1){
+      if(MemoryHelper.isFull(processo.memory)){
         processo.state = 'Abortado';
-        return;
+        console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
+        return false;
       }
 
-      orderedBlocks = this.memory.blocks.sort(function(a,b){
-        return b.size - a.size;
-      })
+      orderedBlocks = MemoryHelper.sort();
 
       bestBlock = null;
       // encontra bloco que se aproxima em tamanho do processo
       orderedBlocks.forEach(function(block){
-        if(!isAumentouMemoria && !block.processo && block.size >= processo.memory){
-          bestBlock = block;
-          return;
-        }else if(block.processo && block.processo.pid == processo.pid){
+        // encontra o melhor bloco para encaixar o processo
+        if(!block.processo && block.size >= processo.memory){
           bestBlock = block;
           return;
         }
@@ -67,29 +33,14 @@ sistemasOperacionais.factory('BestFitService', function () {
           size: processo.memory,
           data : [0,processo.memory]
         };
-        this.memory.blocks.push(block)
+        this.memory.blocks.push(block);
+        this.memory.req++;
         this.memory.size -= processo.memory;
         this.config.totalMemory -= processo.memory;
         bestFit.config.arrayOfProcessMemory.series.push(block);
       }else{
-        // existe e aumentou de tamanho
-        if(isAumentouMemoria){
-          var nextBlock = this.memory.blocks[bestBlock.id + 1];
-          // procura adjacente a ele,se existir e estiver vazio ocupa
-          if(nextBlock && !nextBlock.processo){
-            nextBlock.processo = processo
-            nextBlock.name = 'Processo ' + processo.pid;
-            this.memory.size -= processo.memory;
-            this.config.totalMemory -= processo.memory;
-          }else{
-            processo.state = 'Abortado';
-            return;
-          }
-        }else{
-          // se não aumentou e encontrou um vazio
-          bestBlock.processo = processo;
-          bestBlock.name = 'Processo ' + processo.pid;
-        }
+        bestBlock.name = 'Processo ' + processo.pid;
+        bestBlock.processo = processo;
       }
 
         // var memoryAllocated = false;
@@ -125,17 +76,56 @@ sistemasOperacionais.factory('BestFitService', function () {
         // }
     }
 
-    bestFit.encerrarProcesso = function(processo){
-      this.memory.blocks.forEach(function(block){
-        if(block.processo && block.processo.pid == processo.pid){
-          block.processo.state = 'Encerrado';
-          block.name = 'DISPONIVEL';
-          bestFit.memory.size += processo.memory;
-          bestFit.config.totalMemory += processo.memory;
-          block.processo = null;
-          return;
+    bestFit.aumentarMemoria = function(processo){
+      newSize = MemoryHelper.random(2,128);
+      if(MemoryHelper.isFull(newSize)){
+        processo.state = 'Abortado';
+        console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
+        return false;
+      }
+      processo.memory += newSize;
+      blockIndex = MemoryHelper.indexOf(this.memory.blocks,processo);
+      changedBlocks = [];
+      blockList = this.memory.blocks.splice(blockIndex + 1,this.memory.blocks.length);
+      remainingMemory = newSize;
+      var erro = !blockList.every((nextBlock)=>{
+        if(remainingMemory <= 0 || nextBlock.processo) return false;
+        if(!nextBlock.processo){
+          nextBlock.processo = processo;
+          nextBlock.name = 'Processo ' + processo.pid;
+          remainingMemory -= nextBlock.size;
+          changedBlocks.push(nextBlock);
         }
-      })
+        return true;
+      });
+
+      if(erro){
+        changedBlocks.every((block)=>{
+          block.processo = null;
+        });
+        processo.state = 'Abortado';
+        console.log('Problema na alocação do processo ' + processo.pid + ' abortado.');
+        return false;
+      }else{
+        this.memory.size -= newSize;
+        this.config.totalMemory -= newSize;
+        return true;
+      }
+
+    }
+
+    bestFit.encerrarProcesso = function(processo){
+      MemoryHelper.encerrarProcesso(processo,this);
+      // this.memory.blocks.forEach(function(block){
+      //   if(block.processo && block.processo.pid == processo.pid){
+      //     block.processo.state = 'Encerrado';
+      //     block.name = 'DISPONIVEL';
+      //     bestFit.memory.size += processo.memory;
+      //     bestFit.config.totalMemory += processo.memory;
+      //     block.processo = null;
+      //     return;
+      //   }
+      // })
       // bestFit.config.arrayOfProcessMemory.series.forEach(function (eachBlockFromView){
       //   if(eachBlockFromView.pid == processo.pid ){
       //     eachBlockFromView.pid = undefined;

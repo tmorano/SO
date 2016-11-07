@@ -18,6 +18,8 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
 
     };
 
+    roundrobin.req = 0;
+
     // Cria processo especifico para o Round Robin
     roundrobin.createProcess = function (scopeProccesses, memoryService) {
         var prioridade = getRandomNum(0,3);
@@ -30,8 +32,9 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
             prioridade: prioridade,
             tempoExecutado: 0,
             tempoTotal: getRandomNum(4,20),
-            memory : getRandomNum(16, 128),
+            memory : getRandomNum(2, 128),
             chance: ()=>{
+              // chance de aumentar memória
               return Math.random() > 0.79
             }
         }
@@ -54,6 +57,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
         }, 500);
     };
 
+
     //Executa o processo
     var execRoundRobin = function (config, memoryService) {
         var processo = buscarProximoProcesso();
@@ -66,6 +70,12 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
             //Caso hajam processadores disponiveis
             if (currentProcessor) {
                 var core = config.cores[currentProcessor.id];
+
+                if(memoryService.memory.req != 0 && memoryService.memory.req % 5 == 0 && memoryService.config.memoryAlgoritmo == 2){
+                  memoryService.processaOcorrencias();
+                  memoryService.memory.req = 0;
+                }
+
                 // Adiciona na memoria
                 memoryService.adicionarNaMemoria(processo);
 
@@ -95,6 +105,13 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
                                 } else {
                                     core.tempo--;
                                 }
+
+                                if(processo.chance()){
+                                  if(!memoryService.aumentarMemoria(processo)){
+                                    return;
+                                  }
+                                }
+
                                 processo.state = 'Executando';
                                 processo.progressStyle = 'default';
                                 processo.tempoExecutado += 1;

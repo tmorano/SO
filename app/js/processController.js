@@ -1,4 +1,6 @@
-sistemasOperacionais.controller('processController', function ($rootScope, $scope, $interval, AlgorithmFactoryService, MemoryAlgorithmFactoryService) {
+sistemasOperacionais.controller('processController',
+      function ($rootScope, $scope, $interval,MemoryHelper,
+        AlgorithmFactoryService,MemoryAlgorithmFactoryService) {
     var service;
     var memoryService;
 
@@ -15,8 +17,7 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
         service = AlgorithmFactoryService.buildAlgorithm($scope.config.algoritmo);
         memoryService = MemoryAlgorithmFactoryService.buildAlgorithm($scope.config.memoryAlgoritmo);
         service.configurar(args);
-        memoryService.iniciarMemoria(args);
-
+        iniciarMemoria(memoryService,args);
         createProcess(service, memoryService, args.processos);
         $scope.filaDePrioridade = service.filaDePrioridade;
 
@@ -44,4 +45,16 @@ sistemasOperacionais.controller('processController', function ($rootScope, $scop
         //Adicionando o processo dependendo do Algoritmo
         service.createProcess($scope.getProcessos(), memoryService);
     };
+
+    var iniciarMemoria = function (memoryService,args) {
+        memoryService.config = args;
+        memoryService.memoryBlock = args.memoryBlock;
+        memoryService.memory = {
+          totalSize: 1024,
+          size: 1024,
+          blocks: [],
+          req: 0
+        };
+        MemoryHelper.setMemory(memoryService.memory);
+    }
 });
