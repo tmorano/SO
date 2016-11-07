@@ -105,7 +105,7 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
         },
         isAlocado: function(processo){
           return !memory.blocks.every((block)=>{
-            if(block.processo && processo.id == processo.id ){
+            if(block.processo && block.processo.pid == processo.pid ){
               return false;
             }else{
               return true;
@@ -132,6 +132,17 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
             }
           }
           return -1;
+        },
+        encerrarProcesso: function(processo,algoritmo){
+          memory.blocks.forEach(function(block){
+            if(block.processo && block.processo.pid == processo.pid){
+              block.processo.state = 'Encerrado';
+              block.name = 'DISPONIVEL';
+              block.processo = null;
+            }
+          });
+          memory.size += processo.memory;
+          algoritmo.config.totalMemory += processo.memory;
         }
      }
  });

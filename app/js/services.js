@@ -18,7 +18,7 @@ sistemasOperacionais.factory('AlgorithmFactoryService', function (RoundRobinAlgo
     return algorithm;
 });
 
-sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitService) {
+sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitService,QuickFitService) {
     var memoryAlgorithm = {};
 
     memoryAlgorithm.buildAlgorithm = function (value) {
@@ -28,6 +28,8 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
             case '1':
                 service = BestFitService;
                 return service;
+            case '2':
+                 return QuickFitService
         }
     }
 

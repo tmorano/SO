@@ -52,7 +52,8 @@ sistemasOperacionais.controller('processController',
         memoryService.memory = {
           totalSize: 1024,
           size: 1024,
-          blocks: []
+          blocks: [],
+          req: 0
         };
         MemoryHelper.setMemory(memoryService.memory);
     }
