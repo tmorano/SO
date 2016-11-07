@@ -33,6 +33,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
         this.config.totalMemory -= processo.memory;
         bestFit.config.arrayOfProcessMemory.series.push(block);
       }else{
+        bestBlock.name = 'Processo ' + processo.pid;
         bestBlock.processo = processo;
       }
 
