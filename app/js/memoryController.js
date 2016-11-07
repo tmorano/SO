@@ -112,13 +112,11 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
             }
           })
         },
-        isFull: function(processo){
-          return processo.memory > memory.totalSize || memory.size < 1
+        isFull: function(size){
+          return size > memory.size || memory.size < 1
         },
-        aumentarMemoria: function(processo,min,max){
-          size = Math.floor(Math.random() * (max - min + 1)) + min;
-          processo.memory += size;
-          return size;
+        random: function(min,max){
+          return Math.floor(Math.random() * (max - min + 1)) + min;
         },
         sort: function(){
           return memory.blocks.sort((a,b)=>{

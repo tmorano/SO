@@ -6,6 +6,12 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
 
       if(isAlocado) return;
 
+      if(MemoryHelper.isFull(processo.memory)){
+        processo.state = 'Abortado';
+        console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
+        return false;
+      }
+
       orderedBlocks = MemoryHelper.sort();
 
       bestBlock = null;
@@ -71,16 +77,17 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
     }
 
     bestFit.aumentarMemoria = function(processo){
-      newSize = MemoryHelper.aumentarMemoria(processo,16,128);
-      if(MemoryHelper.isFull(processo)){
+      newSize = MemoryHelper.random(2,128);
+      if(MemoryHelper.isFull(newSize)){
         processo.state = 'Abortado';
         console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
         return false;
       }
+      processo.memory += newSize;
       blockIndex = MemoryHelper.indexOf(this.memory.blocks,processo);
       changedBlocks = [];
       blockList = this.memory.blocks.splice(blockIndex + 1,this.memory.blocks.length);
-      remainingMemory = size;
+      remainingMemory = newSize;
       var erro = !blockList.every((nextBlock)=>{
         if(remainingMemory <= 0 || nextBlock.processo) return false;
         if(!nextBlock.processo){
@@ -100,6 +107,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
         console.log('Problema na alocação do processo ' + processo.pid + ' abortado.');
         return false;
       }else{
+        this.memory.size -= newSize;
         this.config.totalMemory -= newSize;
         return true;
       }

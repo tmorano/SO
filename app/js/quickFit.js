@@ -16,6 +16,12 @@ function QuickFitService(MemoryHelper){
 
     if(isAlocado) return;
 
+    if(MemoryHelper.isFull(processo.memory)){
+      processo.state = 'Abortado';
+      console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
+      return false;
+    }
+
     var found = false,newBlock = {
       size: processo.memory,
       processo: processo,
@@ -48,34 +54,33 @@ function QuickFitService(MemoryHelper){
         })
       }
     }
-    // adiciona inicialmente na lista de "livres"
-    // else if(blockListBySize.length > 0){
-    //    blockListBySize[0].push(newBlock);
-    //    found = true;
-    // }
 
     if(blockListBySize.length == 0 || !found){
       this.memory.blocks.push(newBlock);
-    }
 
       // se nao tiver a ocorrencia cria
-     if(!ocorrencias[newBlock.size]) ocorrencias[newBlock.size] = 0;
-     // contando a proxima ocorrencia
-     ocorrencias[newBlock.size]++;
+      if(!ocorrencias[newBlock.size]) ocorrencias[newBlock.size] = 0;
+      // contando a proxima ocorrencia
+      ocorrencias[newBlock.size]++;
 
-    this.config.arrayOfProcessMemory.series.push(newBlock);
-    this.memory.size -= processo.memory;
-    this.config.totalMemory -= processo.memory;
-    this.memory.req++;
+      this.config.arrayOfProcessMemory.series.push(newBlock);
+      this.memory.size -= processo.memory;
+      this.config.totalMemory -= processo.memory;
+      this.memory.req++;
+    }
+
   }
 
   this.aumentarMemoria = (processo) =>{
     oldSize = processo.memory;
-    newSize = MemoryHelper.aumentarMemoria(processo,2,128);
-    if(MemoryHelper.isFull(processo)){
+    newSize = MemoryHelper.random(2,128);
+    if(MemoryHelper.isFull(newSize)){
       processo.state = 'Abortado';
-      return;
+      console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
+      return false;
     }
+
+    processo.memory =+ newSize;
 
     lista = this.memory.blocks;
 
@@ -109,6 +114,8 @@ function QuickFitService(MemoryHelper){
        return false;
      }else{
        this.memory.size -= processo.memory;
+       this.config.totalMemory -= newSize;
+       return true;
      }
   }
 
