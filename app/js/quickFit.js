@@ -4,36 +4,36 @@ sistemasOperacionais.service('QuickFitService',QuickFitService);
 function QuickFitService(MemoryHelper){
 
   var blockListBySize = [];
-  var rank;
 
   var ocorrencias = [];
 
   this.req = 0;
 
-  this.adicionarNaMemoria = (processo)=>{
+  this.adicionarNaMemoria = function(processo){
 
-    isAlocado = MemoryHelper.isAlocado(processo);
+    var isAlocado = MemoryHelper.isAlocado(processo);
 
     if(isAlocado) return;
 
     if(MemoryHelper.isFull(processo.memory)){
       processo.state = 'Abortado';
-      console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
+      console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory);
       return false;
     }
 
-    var found = false,newBlock = {
+    var found = false;
+    var newBlock = {
       size: processo.memory,
       processo: processo,
       id: this.memory.blocks.length,
-      data : [[0,processo.memory]],
-      name: 'Processo ' + processo.pid,
+      data: [[0, processo.memory]],
+      name: 'Processo ' + processo.pid
     };
     if(blockListBySize[processo.memory]){
-      found = !blockListBySize[processo.memory].every((block)=>{
+      found = !blockListBySize[processo.memory].every(function(block){
         if(!block.processo){
-           block.name = 'Processo ' + processo.pid,
-           block.processo = processo;
+           block.processo = processo,
+           block.name = 'Processo ' + processo.pid;
            return false;
         }else{
           return true;
@@ -41,12 +41,12 @@ function QuickFitService(MemoryHelper){
       });
       // bloco pode estar em "outra" lista
       if(!found){
-        orderedOthers = blockListBySize[0].sort((a,b)=>{return b.size - a.size});
-        found = orderedOthers.every((block)=>{
+        var orderedOthers = blockListBySize[0].sort(function(a,b){return b.size - a.size});
+        found = orderedOthers.every(function(block){
           // como é o a lista dos blocos restante vê se o bloco tem memoria
           if(!block.processo && processo.memory >= block.size ){
-             block.name = 'Processo ' + processo.pid,
-             block.processo = processo;
+             block.processo = processo,
+             block.name = 'Processo ' + processo.pid;
              return false;
           }else{
             return true;
@@ -69,26 +69,26 @@ function QuickFitService(MemoryHelper){
       this.memory.req++;
     }
 
-  }
+  };
 
-  this.aumentarMemoria = (processo) =>{
-    oldSize = processo.memory;
-    newSize = MemoryHelper.random(2,128);
+  this.aumentarMemoria = function(processo) {
+    var oldSize = processo.memory;
+    var newSize = MemoryHelper.random(2,128);
     if(MemoryHelper.isFull(newSize)){
       processo.state = 'Abortado';
-      console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
+      console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory);
       return false;
     }
 
     processo.memory =+ newSize;
 
-    lista = this.memory.blocks;
+    var lista = this.memory.blocks;
 
-    indexBlock = MemoryHelper.indexOf(lista,processo);
-    nextBlocks = lista.splice(indexBlock + 1,lista.length);
+    var indexBlock = MemoryHelper.indexOf(lista,processo);
+    var nextBlocks = lista.splice(indexBlock + 1,lista.length);
     var changedBlocks = [];
     var remainingMemory = newSize;
-    var erro = !nextBlocks.every((block)=>{
+    var erro = !nextBlocks.every(function(block){
       if(remainingMemory <= 0 || block.processo){
         return false;
       }
@@ -106,7 +106,7 @@ function QuickFitService(MemoryHelper){
 
      // desfazer alterações
      if(erro){
-       changedBlocks.forEach((block)=>{
+       changedBlocks.forEach(function (block){
          block.processo = null;
        });
        processo.state = 'Abortado';
@@ -117,33 +117,33 @@ function QuickFitService(MemoryHelper){
        this.config.totalMemory -= newSize;
        return true;
      }
-  }
+  };
 
-  this.encerrarProcesso = (processo)=>{
+  this.encerrarProcesso = function(processo){
     MemoryHelper.encerrarProcesso(processo,this);
-  }
+  };
 
-  this.processaOcorrencias = ()=>{
-    _ = []
-    ocorrencias.forEach((valor,tamanho)=>{
+  this.processaOcorrencias = function(){
+    var _ = [];
+    ocorrencias.forEach(function(valor,tamanho){
       _.push({ocorrencias: valor * 100 / this.memory.blocks.length, tamanho: tamanho});
     });
-    _ = _.sort((a,b)=>{ return b.ocorrencias - a.ocorrencias });
-    top_ = _.slice(0,5);
-    livres_ = _.slice(5,_.length);
+    _ = _.sort(function(a,b){ return b.ocorrencias - a.ocorrencias });
+    var top_ = _.slice(0,5);
+    var livres_ = _.slice(5,_.length);
 
-    sorted = [];
-    top_.forEach((ocorrencia)=>{
-      sorted[ocorrencia.tamanho] = this.memory.blocks.filter((block)=>{ return block.size == ocorrencia.tamanho });
+    var sorted = [];
+    top_.forEach(function (ocorrencia){
+      sorted[ocorrencia.tamanho] = this.memory.blocks.filter(function(block){ return block.size == ocorrencia.tamanho });
     });
 
     sorted[0] = [];
-    livres_.forEach((ocorrencia)=>{
-      sorted[0] = sorted[0].concat(this.memory.blocks.filter((block)=>{ return block.size == ocorrencia.tamanho }));
+    livres_.forEach(function (ocorrencia){
+      sorted[0] = sorted[0].concat(this.memory.blocks.filter(function (block){ return block.size == ocorrencia.tamanho }));
     });
-    toView = [];
-    copy = sorted;
-    c = 1;
+    var toView = [];
+    var copy = sorted;
+    var c = 1;
     for(var i = 0;i < copy.length; i++){
       if(!copy[i] || copy[i].length == 0) continue;
       for(var j = 0;j < copy[i].length; j++){
@@ -155,7 +155,7 @@ function QuickFitService(MemoryHelper){
 
     this.config.arrayOfProcessMemory.series = toView;
     this.config.arrayOfProcessMemory.series = this.config.arrayOfProcessMemory.series.concat(this.memory.blocks)
-  }
+  };
 
   return this;
 }

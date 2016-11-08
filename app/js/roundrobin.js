@@ -1,4 +1,4 @@
-sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, MemoryAlgorithmFactoryService) {
+sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) {
     var roundrobin = {};
 
     roundrobin.ultimaFilaProcessada = 0;
@@ -21,7 +21,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
     roundrobin.req = 0;
 
     // Cria processo especifico para o Round Robin
-    roundrobin.createProcess = function (scopeProccesses, memoryService) {
+    roundrobin.createProcess = function (scopeProccesses) {
         var prioridade = getRandomNum(0,3);
         var pid = scopeProccesses.length;
         var proc = {
@@ -33,11 +33,11 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
             tempoExecutado: 0,
             tempoTotal: getRandomNum(4,20),
             memory : getRandomNum(2, 128),
-            chance: ()=>{
+            chance: function(){
               // chance de aumentar memória
               return Math.random() > 0.79
             }
-        }
+        };
 
         //Adiciona na fila de prioridades
         roundrobin.filaDePrioridade[prioridade].push(proc);
@@ -90,7 +90,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
                         if(processo.state == 'Abortado'){
                             $interval.cancel(core.interval);
                             roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
-                            core.state = 'Parado'
+                            core.state = 'Parado';
                             core.processo = undefined;
                             core.interval = false;
                             core.tempo = 0;
@@ -122,14 +122,14 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
                                 processo.state = 'Aguardando';
                                 processo.progressStyle = 'warning';
                                 roundrobin.filaDePrioridade[processo.prioridade].push(core.processo);
-                                core.state = 'Parado'
+                                core.state = 'Parado';
                                 core.processo = undefined;
                                 core.interval = false;
                                 core.tempo = 0;
                             } else if (processo.tempoExecutado == processo.tempoTotal) {
                                 $interval.cancel(core.interval);
                                 roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
-                                core.state = 'Parado'
+                                core.state = 'Parado';
                                 core.processo = undefined;
                                 core.interval = false;
                                 core.tempo = 0;
@@ -166,7 +166,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval, 
             return buscarProximoProcesso();
         }
         return processo;
-    }
+    };
 
     function getRandomNum(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;

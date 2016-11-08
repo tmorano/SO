@@ -11,9 +11,9 @@ sistemasOperacionais.factory('AlgorithmFactoryService', function (RoundRobinAlgo
             case '2':
                 service = LeastTimeToGoAlgorithmService;
                 return service
-        };
+        }
 
-    }
+    };
 
     return algorithm;
 });
@@ -31,9 +31,52 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
             case '2':
                  return QuickFitService
         }
-    }
+    };
 
 
 
     return memoryAlgorithm;
-});
+})
+    .service('MemoryHelper',function(){
+        var memory;
+        return {
+            setMemory: function(mem){
+                memory = mem
+            },
+            isAlocado: function(processo){
+                return !memory.blocks.every(function(block){
+                    return !(block.processo && block.processo.pid == processo.pid);
+                })
+            },
+            isFull: function(size){
+                return size > memory.size || memory.size < 1
+            },
+            random: function(min,max){
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            },
+            sort: function(){
+                return memory.blocks.sort(function(a,b){
+                        return b.size - a.size;
+            })
+            },
+            indexOf: function(lista,processo){
+                for(var i = 0;i < lista.length;i++){
+                    if(lista[i].processo && lista[i].processo.pid == processo.pid){
+                        return i;
+                    }
+                }
+                return -1;
+            },
+            encerrarProcesso: function(processo,algoritmo){
+                memory.blocks.forEach(function(block){
+                    if(block.processo && block.processo.pid == processo.pid){
+                        block.processo.state = 'Encerrado';
+                        block.name = 'DISPONIVEL';
+                        block.processo = null;
+                    }
+                });
+                memory.size += processo.memory;
+                algoritmo.config.totalMemory += processo.memory;
+            }
+        }
+    });

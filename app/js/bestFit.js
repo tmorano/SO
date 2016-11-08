@@ -8,7 +8,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
 
       if(MemoryHelper.isFull(processo.memory)){
         processo.state = 'Abortado';
-        console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
+        console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory);
         return false;
       }
 
@@ -74,21 +74,21 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
         //         processo.state = 'Abortado';
         //     }
         // }
-    }
+    };
 
     bestFit.aumentarMemoria = function(processo){
-      newSize = MemoryHelper.random(2,128);
+      var newSize = MemoryHelper.random(2,128);
       if(MemoryHelper.isFull(newSize)){
         processo.state = 'Abortado';
-        console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory)
+        console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory);
         return false;
       }
       processo.memory += newSize;
-      blockIndex = MemoryHelper.indexOf(this.memory.blocks,processo);
-      changedBlocks = [];
-      blockList = this.memory.blocks.splice(blockIndex + 1,this.memory.blocks.length);
-      remainingMemory = newSize;
-      var erro = !blockList.every((nextBlock)=>{
+      var blockIndex = MemoryHelper.indexOf(this.memory.blocks,processo);
+      var changedBlocks = [];
+      var blockList = this.memory.blocks.splice(blockIndex + 1,this.memory.blocks.length);
+      var remainingMemory = newSize;
+      var erro = !blockList.every(function (nextBlock){
         if(remainingMemory <= 0 || nextBlock.processo) return false;
         if(!nextBlock.processo){
           nextBlock.processo = processo;
@@ -100,7 +100,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
       });
 
       if(erro){
-        changedBlocks.every((block)=>{
+        changedBlocks.every(function(block){
           block.processo = null;
         });
         processo.state = 'Abortado';
@@ -112,7 +112,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
         return true;
       }
 
-    }
+    };
 
     bestFit.encerrarProcesso = function(processo){
       MemoryHelper.encerrarProcesso(processo,this);
@@ -134,7 +134,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
       //     return;
       //   }
       // })
-    }
+    };
 
     return bestFit;
 });
