@@ -54,19 +54,6 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
             random: function(min,max){
                 return Math.floor(Math.random() * (max - min + 1)) + min;
             },
-            sort: function(){
-                return memory.blocks.sort(function(a,b){
-                        return b.size - a.size;
-            })
-            },
-            indexOf: function(lista,processo){
-                for(var i = 0;i < lista.length;i++){
-                    if(lista[i].processo && lista[i].processo.pid == processo.pid){
-                        return i;
-                    }
-                }
-                return -1;
-            },
             encerrarProcesso: function(processo,algoritmo){
                 memory.blocks.forEach(function(block){
                     if(block.processo && block.processo.pid == processo.pid){
