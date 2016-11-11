@@ -1,161 +1,225 @@
-sistemasOperacionais.service('QuickFitService',QuickFitService);
+sistemasOperacionais.factory('QuickFitService', function (MemoryHelper) {
+  var quickFit = {};
+  quickFit.rec = 0;
+  quickFit.ocorrencias = [];
 
+  var sortedBlocks = [];
 
-function QuickFitService(MemoryHelper){
+  quickFit.add = function(processo,newSize){
+    // pega o novo tamanho (se for só aumentar) ou o tamanho do novo processo
+    var size = newSize || processo.memory;
+    // Contagem de requisições do quick Fit
+    quickFit.rec++;
 
-  var blockListBySize = [];
+    //Ocorrencias devem ser contabilizadas pra qualquer requisição, inclusive as q possam ser abortadas.
+    // se nao tiver a ocorrencia cria
+    if(!quickFit.ocorrencias[size]){
 
-  var ocorrencias = [];
-
-  this.req = 0;
-
-  this.adicionarNaMemoria = function(processo){
-
-    var isAlocado = MemoryHelper.isAlocado(processo);
-
-    if(isAlocado) return;
-
-    if(MemoryHelper.isFull(processo.memory)){
-      processo.state = 'Abortado';
-      console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory);
-      return false;
+      quickFit.ocorrencias[size] = {
+        ocorrencias : 0,
+        size : size};
     }
+    // contando a proxima ocorrencia
+    quickFit.ocorrencias[size].ocorrencias++;
 
-    var found = false;
-    var newBlock = {
-      size: processo.memory,
-      processo: processo,
-      id: this.memory.blocks.length,
-      data: [[0, processo.memory]],
-      name: 'Processo ' + processo.pid
-    };
-    if(blockListBySize[processo.memory]){
-      found = !blockListBySize[processo.memory].every(function(block){
-        if(!block.processo){
-           block.processo = processo,
-           block.name = 'Processo ' + processo.pid;
-           return false;
-        }else{
-          return true;
+    // Verifico se ja existe o array de requisições do quick fit
+    var quickFitBlock;
+    if(quickFit.quickBlocks){
+      // Buscar no array do quickFit pelo tamanho do processo
+      quickFit.quickBlocks.forEach(function (eachBlock) {
+        if(eachBlock.size == size){
+          eachBlock.blocks.forEach(function (block) {
+            if(block.processo == undefined){
+              quickFitBlock = block;
+            }
+          });
+          if(!quickFitBlock){
+            //Bloco de tamanho definido nao foi encontrado, criando novo bloco:
+            var block = {
+              id: this.memory.blocks.length,
+              processo: processo,
+              size: size,
+              data: [0,size],
+              name: 'Processo ' + processo.pid
+            };
+            this.memory.blocks.push(block);
+            this.config.arrayOfProcessMemory.series.push(block);
+            /** bloco auxiliar de blocos ordenados pelo tamanho **/
+            sortedBlocks.push(block);
+          }
         }
       });
-      // bloco pode estar em "outra" lista
-      if(!found){
-        var orderedOthers = blockListBySize[0].sort(function(a,b){return b.size - a.size});
-        found = orderedOthers.every(function(block){
-          // como é o a lista dos blocos restante vê se o bloco tem memoria
-          if(!block.processo && processo.memory >= block.size ){
-             block.processo = processo,
-             block.name = 'Processo ' + processo.pid;
-             return false;
-          }else{
-            return true;
+      if(!quickFitBlock){
+        // Bloco nao foi encontrado, procurar nos bloco "OUTROS"
+        quickFit.quickBlocks[5].blocks.forEach(function (block) {
+          //Procurando bloco com tamanho ideal ou com tamanho maior que o do processo (Fragmentação interna):
+          if(block.size >= size && block.processo == undefined){
+            quickFitBlock = block;
           }
-        })
+        });
+        if(!quickFitBlock){
+          //Nao existem blocos disponiveis, criando novo bloco:
+          var block = {
+            id: this.memory.blocks.length,
+            processo: processo,
+            size: size,
+            data: [0,size],
+            name: 'Processo ' + processo.pid
+          };
+          this.memory.blocks.push(block);
+          this.config.arrayOfProcessMemory.series.push(block);
+          /** bloco auxiliar de blocos ordenados pelo tamanho **/
+          sortedBlocks.push(block);
+        }
+
       }
+      /** decrementa do tamanho total o novo tamanho (pediu mais memória) ou o tamanho
+       do novo processo. Quando newSize <> undefined é uma requisição por mais memória.
+       **/
+      this.memory.size = this.config.totalMemory -= (newSize || processo.memory);
+
+    }else{
+      // Mesmo processo do BestFit
+      /** ordena para conseguir o melhor bloco **/
+      var orderedBlocks = sortedBlocks.sort(function(blockA,blockB){ return blockB.size - blockA.size; });
+
+      for(var i = 0;i < orderedBlocks.length; i++){
+        if(!orderedBlocks[i].processo && orderedBlocks[i].size >= size){
+          quickFitBlock = orderedBlocks[i];
+        }
+      }
+
+      /** não encontrou um bloco **/
+      if(!quickFitBlock){
+
+        /** procura blocos livres pra alocar **/
+        for(var i = 0;i < this.memory.blocks.length && size > 0; i++){
+          if(this.memory.blocks[i].processo) continue;
+          this.memory.blocks[i].processo = processo;
+          this.memory.blocks[i].name = 'Processo ' + processo.pid;
+          size -= this.memory.blocks[i].size;
+        }
+
+        /** se não achar ou se ainda sobrar o que tiver de alocar **/
+        if(size > 0){
+          var block = {
+            id: this.memory.blocks.length,
+            processo: processo,
+            size: size,
+            data: [0,size],
+            name: 'Processo ' + processo.pid
+          };
+          this.memory.blocks.push(block);
+          this.config.arrayOfProcessMemory.series.push(block);
+          /** bloco auxiliar de blocos ordenados pelo tamanho **/
+          sortedBlocks.push(block);
+        };
+
+      }else{
+        /** se encontrou um bloco aloca ele **/
+        quickFitBlock.name = 'Processo ' + processo.pid;
+        quickFitBlock.processo = processo;
+      }
+      /** decrementa do tamanho total o novo tamanho (pediu mais memória) ou o tamanho
+       do novo processo. Quando newSize <> undefined é uma requisição por mais memória.
+       **/
+      this.memory.size = this.config.totalMemory -= (newSize || processo.memory);
+    }
+  }
+
+  quickFit.adicionarNaMemoria = function (processo) {
+    if(MemoryHelper.isAlocado(processo)) return;
+
+    if(MemoryHelper.isFull(processo.memory)){
+      console.log('Processo ',processo.pid,' foi abortado ');
+      processo.state = 'Abortado';
+      return;
+    }
+    if(quickFit.rec > 20){
+      this.ajustarBlocos();
+      quickFit.rec = 0;
     }
 
-    if(blockListBySize.length == 0 || !found){
-      this.memory.blocks.push(newBlock);
-
-      // se nao tiver a ocorrencia cria
-      if(!ocorrencias[newBlock.size]) ocorrencias[newBlock.size] = 0;
-      // contando a proxima ocorrencia
-      ocorrencias[newBlock.size]++;
-
-      this.config.arrayOfProcessMemory.series.push(newBlock);
-      this.memory.size -= processo.memory;
-      this.config.totalMemory -= processo.memory;
-      this.memory.req++;
-    }
-
+    this.add(processo);
   };
 
-  this.aumentarMemoria = function(processo) {
-    var oldSize = processo.memory;
+  quickFit.aumentarMemoria = function(processo){
     var newSize = MemoryHelper.random(2,128);
+    /** Verifica se o novo tamanho pode ser alocado **/
     if(MemoryHelper.isFull(newSize)){
       processo.state = 'Abortado';
-      console.log('Processo abortado: Memória Cheia','Memória Total: ' + this.memory.size,' Memória do Processo: ' + processo.memory);
+      /** desaloca **/
+      this.memory.blocks.forEach(function(block){
+        if(block.processo && block.processo.pid == processo.pid){
+          block.name = 'DISPONIVEL';
+          block.processo = null;
+        }
+      });
+      this.config.totalMemory = this.memory.size += processo.memory;
       return false;
     }
-
-    processo.memory =+ newSize;
-
-    var lista = this.memory.blocks;
-
-    var indexBlock = MemoryHelper.indexOf(lista,processo);
-    var nextBlocks = lista.splice(indexBlock + 1,lista.length);
-    var changedBlocks = [];
-    var remainingMemory = newSize;
-    var erro = !nextBlocks.every(function(block){
-      if(remainingMemory <= 0 || block.processo){
-        return false;
-      }
-      if(!block.processo){
-        if(!ocorrencia[oldSize]) ocorrencia[oldSize]--;
-        if(!ocorrencia[newSize]) ocorrencia[newSize] = 0;
-        ocorrencia[newSize]++;
-        block.processo = processo;
-        block.name = 'Processo ' + processo.pid,
-        remainingMemory -= block.size;
-        changedBlocks.push(block);
-      }
-      return true;
-    });
-
-     // desfazer alterações
-     if(erro){
-       changedBlocks.forEach(function (block){
-         block.processo = null;
-       });
-       processo.state = 'Abortado';
-       console.log('Problema na alocação do processo ' + processo.pid + ' abortado.');
-       return false;
-     }else{
-       this.memory.size -= processo.memory;
-       this.config.totalMemory -= newSize;
-       return true;
-     }
+    processo.memory += newSize;
+    this.add(processo,newSize);
+    return true;
   };
 
-  this.encerrarProcesso = function(processo){
+  quickFit.ajustarBlocos = function(){
+    //Verificar os TOP 4
+    quickFit.quickBlocks = [];
+    var topKeys = quickFit.ocorrencias.sort(function (ocorrenciaA, ocorrenciaB) {
+      return ocorrenciaB.ocorrencias - ocorrenciaA.ocorrencias;
+    });
+
+    var orderedBlocks = sortedBlocks.sort(function(blockA,blockB){
+      return blockB.size - blockA.size;
+    });
+
+    var count = 1;
+    topKeys.forEach(function (eachKey) {
+      //Buscar bloco de memoria com key e inserir no quickBlocks
+      // Para os 4 primeiros, vou colocar um tamanho especifico
+      for(var i = 0;i < orderedBlocks.length; i++){
+        if(count <= 4){
+          if(orderedBlocks[i].size == eachKey.size){
+            if(quickFit.quickBlocks[count]){
+              quickFit.quickBlocks[count].blocks.push(orderedBlocks[i]);
+              //Para cada bloco que adicionei no quickBlocks removo do OrderedBlocks para nao inseri-lo novamente.
+              orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
+            }else{
+              quickFit.quickBlocks[count] = {
+                blocks: [orderedBlocks[i]],
+                size : orderedBlocks[i].size
+
+              };
+
+              orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
+              count++;
+            }
+
+          }
+        }else{
+          //Para o restante, vou adicionar todos os outros tamanhos (Array: Outros)
+          if(quickFit.quickBlocks[count]){
+            quickFit.quickBlocks[count].blocks.push(orderedBlocks[i]);
+            orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
+          }else{
+            quickFit.quickBlocks[count] = {
+              blocks: [orderedBlocks[i]],
+              size : orderedBlocks[i].size
+            };
+            orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
+          }
+
+        }
+      }
+
+    })
+
+  }
+
+  quickFit.encerrarProcesso = function(processo){
     MemoryHelper.encerrarProcesso(processo,this);
   };
 
-  this.processaOcorrencias = function(){
-    var _ = [];
-    ocorrencias.forEach(function(valor,tamanho){
-      _.push({ocorrencias: valor * 100 / this.memory.blocks.length, tamanho: tamanho});
-    });
-    _ = _.sort(function(a,b){ return b.ocorrencias - a.ocorrencias });
-    var top_ = _.slice(0,5);
-    var livres_ = _.slice(5,_.length);
-
-    var sorted = [];
-    top_.forEach(function (ocorrencia){
-      sorted[ocorrencia.tamanho] = this.memory.blocks.filter(function(block){ return block.size == ocorrencia.tamanho });
-    });
-
-    sorted[0] = [];
-    livres_.forEach(function (ocorrencia){
-      sorted[0] = sorted[0].concat(this.memory.blocks.filter(function (block){ return block.size == ocorrencia.tamanho }));
-    });
-    var toView = [];
-    var copy = sorted;
-    var c = 1;
-    for(var i = 0;i < copy.length; i++){
-      if(!copy[i] || copy[i].length == 0) continue;
-      for(var j = 0;j < copy[i].length; j++){
-        copy[i][j].data = [[c,copy[i][j].size]];
-        toView.push(copy[i][j]);
-      }
-      c++;
-    }
-
-    this.config.arrayOfProcessMemory.series = toView;
-    this.config.arrayOfProcessMemory.series = this.config.arrayOfProcessMemory.series.concat(this.memory.blocks)
-  };
-
-  return this;
-}
+  return quickFit;
+});

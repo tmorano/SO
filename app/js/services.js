@@ -57,7 +57,6 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
             encerrarProcesso: function(processo,algoritmo){
                 memory.blocks.forEach(function(block){
                     if(block.processo && block.processo.pid == processo.pid){
-                        block.processo.state = 'Encerrado';
                         block.name = 'DISPONIVEL';
                         block.processo = null;
                     }
