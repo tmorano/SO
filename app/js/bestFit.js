@@ -77,7 +77,10 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
         processo.state = 'Abortado';
       }else{
         /** só aloca a nova memória se tiver espaço **/
-        this.add(processo,newSize);
+        var processBlock = MemoryHelper.indexOfBlock(processo.pid);
+        if(processBlock.size < newSize){
+          this.add(processo,newSize);
+        }
       }
 
       if(processo.state != 'Abortado'){
