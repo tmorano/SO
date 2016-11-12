@@ -18,53 +18,35 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
       var size = newSize || processo.memory;
 
       /** ordena para conseguir o melhor bloco **/
-      var orderedBlocks = sortedBlocks.sort(function(blockA,blockB){ return blockB.size - blockA.size; });
+      sortedBlocks.sort(function(blockA,blockB){ return blockB.size - blockA.size; });
       var bestFitBlock;
-      for(var i = 0;i < orderedBlocks.length; i++){
-        if(!orderedBlocks[i].processo && orderedBlocks[i].size >= size){
-          bestFitBlock = orderedBlocks[i];
+      for(var i = 0;i < sortedBlocks.length; i++){
+        if(!sortedBlocks[i].processo && sortedBlocks[i].size >= size){
+          bestFitBlock = sortedBlocks[i];
         }
       }
 
       /** não encontrou um bloco **/
       if(!bestFitBlock){
 
-        var changed = [];
-        /** procura blocos livres pra alocar **/
-        for(var i = 0;i < this.memory.blocks.length; i++){
-          if(this.memory.blocks[i].processo || size <= 0) continue;
-          this.memory.blocks[i].processo = processo;
-          this.memory.blocks[i].name = 'Processo ' + processo.pid;
-          size -= this.memory.blocks[i].size;
-          changed.push(this.memory.blocks[i]);
+        /** caso o tamanho ultrapasse os limites da memória e não foi possível encontrar um bloco apropriado **/
+        if((tamblock + size) > this.memory.totalSize){
+          processo.state = 'Abortado';
+          return;
         }
-
-        /** se não achar ou se ainda sobrar o que tiver de alocar **/
-        if(size > 0){
-
-          /** impedir que seja criado um novo bloco fora do tamanho da memória  **/
-          if((tamblock + size) > this.memory.totalSize){
-            /** desfaz alocações feitas **/
-            this.desfazerAlocacoes(changed);
-            processo.state = 'Abortado';
-            return;
-          }
-
-          var block = {
-            id: this.memory.blocks.length,
-            processo: processo,
-            size: size,
-            data: [0,size],
-            name: 'Processo ' + processo.pid
-          };
-          /** incrementa a quantidade total de blocos criados **/
-          tamblock += size;
-          this.memory.blocks.push(block);
-          this.config.arrayOfProcessMemory.series.push(block);
-          /** lista auxiliar de blocos ordenados pelo tamanho **/
-          sortedBlocks.push(block);
+        var block = {
+          id: this.memory.blocks.length,
+          processo: processo,
+          size: size,
+          data: [0,size],
+          name: 'Processo ' + processo.pid
         };
-
+        /** incrementa a quantidade total de blocos criados **/
+        tamblock += size;
+        this.memory.blocks.push(block);
+        this.config.arrayOfProcessMemory.series.push(block);
+        /** lista auxiliar de blocos ordenados pelo tamanho **/
+        sortedBlocks.push(block);
       }else{
         /** se encontrou um bloco aloca ele **/
         bestFitBlock.name = 'Processo ' + processo.pid;
@@ -73,7 +55,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
       /** decrementa do tamanho total o novo tamanho (pediu mais memória) ou o tamanho
        do novo processo. Quando newSize <> undefined é uma requisição por mais memória.
       **/
-      this.memory.size = this.config.totalMemory -= (newSize || processo.memory);
+      this.memory.size -= (newSize || processo.memory);
     }
 
     bestFit.adicionarNaMemoria = function (processo) {
