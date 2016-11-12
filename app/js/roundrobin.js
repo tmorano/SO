@@ -35,7 +35,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
             memory : getRandomNum(2, 128),
             chance: function(){
               // chance de aumentar memória
-              return Math.random() > 0.79
+              return Math.random() > 0.89
             }
         };
 
