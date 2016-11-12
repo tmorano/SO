@@ -9,7 +9,12 @@ sistemasOperacionais.controller('indexController', function ($rootScope, $scope)
         quantum: 1,
         processos: 1,
         processadores: [],
-        running: false
+        running: false,
+        memory: {
+          blocks: [],
+          size: 1024,
+          totalSize: 1024
+        }
     };
 
     $scope.createCores = function () {

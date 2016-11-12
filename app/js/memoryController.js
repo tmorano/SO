@@ -6,7 +6,6 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
         }
     });
 
-
     $scope.config.arrayOfProcessMemory = {
         options: {
             chart: {
@@ -37,8 +36,6 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
         size: {}
     }
 
-
-
     $scope.totalMemoryChart = {
         options: {
             chart: {
@@ -54,7 +51,7 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
 
                 data.push({
                     x: time,
-                    y: $scope.config.totalMemory
+                    y: $scope.config.memory.size
                 });
                 return data;
             }())
@@ -83,7 +80,7 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
     function addPoint (){
         // set up the updating of the chart each second
         var x = (new Date()).getTime(), // current time
-            y = $scope.config.totalMemory
+            y = $scope.config.memory.size
         var time = {
             x : x,
             y : y

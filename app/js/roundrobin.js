@@ -71,11 +71,6 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
             if (currentProcessor) {
                 var core = config.cores[currentProcessor.id];
 
-                if(memoryService.memory.req != 0 && memoryService.memory.req % 5 == 0 && memoryService.config.memoryAlgoritmo == 2){
-                  memoryService.processaOcorrencias();
-                  memoryService.memory.req = 0;
-                }
-
                 // Adiciona na memoria
                 memoryService.adicionarNaMemoria(processo);
 

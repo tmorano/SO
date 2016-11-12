@@ -49,12 +49,7 @@ sistemasOperacionais.controller('processController',
     var iniciarMemoria = function (memoryService,args) {
         memoryService.config = args;
         memoryService.memoryBlock = args.memoryBlock;
-        memoryService.memory = {
-          totalSize: 1024,
-          size: 1024,
-          blocks: [],
-          req: 0
-        };
+        memoryService.memory = args.memory;
         MemoryHelper.setMemory(memoryService.memory);
     }
 });
