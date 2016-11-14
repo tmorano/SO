@@ -61,10 +61,10 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
                     if(block.processo && block.processo.pid == processo.pid){
                         block.name = 'DISPONIVEL';
                         block.processo = null;
-                        if(algoritmo.quickBlocks){
+                        if(algoritmo.memory.quickBlocks){
                             //Para sincronizar os blocos com os quickBlocks criados no quickFit.
                             for(var i =1 ; i <=5; i++){
-                                var viewBlock = $filter('getById')(algoritmo.quickBlocks[i].blocks, block.id);
+                                var viewBlock = $filter('getById')(algoritmo.memory.quickBlocks[i].blocks, block.id);
                                 if(viewBlock){
                                     viewBlock.processo = null;
                                     viewBlock.name = 'DISPONIVEL';
