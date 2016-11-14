@@ -62,21 +62,22 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
           });
           if(!quickFitBlock){
             //Verificando se eh possivel adicionar um novo bloco:
-            if(!((tamblock + size) > this.memory.totalSize)){
+            if(!((tamblock + size) > quickFit.memory.totalSize)){
               //Bloco de tamanho definido nao foi encontrado, criando novo bloco:
-              var block = {
-                id: this.memory.blocks.length,
+              var newBlock = {
+                id: quickFit.memory.blocks.length,
                 processo: processo,
                 size: size,
                 data: [0,size],
                 name: 'Processo ' + processo.pid
               };
+              quickFitBlock = newBlock;
               tamblock += size;
-              quickFit.memory.quickBlocks[blockNum].blocks.push(block);
-              this.memory.blocks.push(block);
-              this.config.arrayOfProcessMemory.series.push(block);
+              quickFit.memory.quickBlocks[blockNum+1].blocks.push(newBlock);
+              quickFit.memory.blocks.push(newBlock);
+              quickFit.config.arrayOfProcessMemory.series.push(newBlock);
               /** bloco auxiliar de blocos ordenados pelo tamanho **/
-              quickFit.sortedBlocks.push(block);
+              quickFit.sortedBlocks.push(newBlock);
             }
           }
         }
@@ -185,7 +186,7 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
       processo.state = 'Abortado';
       return;
     }
-    if(quickFit.rec > 20){
+    if(quickFit.rec > 5){
       this.ajustarBlocos();
       quickFit.rec = 0;
     }

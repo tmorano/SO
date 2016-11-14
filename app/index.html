@@ -82,6 +82,12 @@
                 </div>
             </div>
 
+            <div class="panel-default col-md-2" ng-show="config.algoritmo == 1">
+                <div class="panel-heading"><div class="text-center"><b>Memoria Total</b></div></br>
+                    <input class="form-control" type="number"  ng-disabled="config.running" ng-model="config.totalMemory">
+                </div>
+            </div>
+
             <div class="col-md-12">
                 </br>
                 <input type="submit" value="Iniciar" ng-click="createCores()" class="btn btn-primary">
@@ -178,25 +184,104 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-6 col-sm-12" ng-show="config.memoryAlgoritmo == 2">
-            <div class="panel-default">
+        <div ng-show="config.memoryAlgoritmo == 2">
+            <div class="panel-default col-md-12" ng-show="config.memory.quickBlocks">
                 <div class="panel-heading">Quick Blocks</div>
                 <div class="panel-body">
-                    <table class="table table-striped sortable">
-                        <thead>
-                        <tr>
-                            <th>Block 1</th>
-                        </tr>
-                        </thead>
-                        <tr ng-repeat="block in config.memory.quickBlocks[1].blocks">
-                            <td>{{block.size}}</td>
-                        </tr>
-                    </table>
+                    <div class="col-md-2">
+                        <div class="panel-default">
+                            <div class="panel-heading">Block 1</div>
+                            <div class="panel-body">
+                                <table class="table table-striped sortable">
+                                    <thead>
+                                    <tr>
+                                        <th>Tamanho</th>
+                                    </tr>
+                                    </thead>
+                                    <tr ng-repeat="block in config.memory.quickBlocks[1].blocks">
+                                        <td>{{block.size}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="panel-default">
+                            <div class="panel-heading">Block 2</div>
+                            <div class="panel-body">
+                                <table class="table table-striped sortable">
+                                    <thead>
+                                    <tr>
+                                        <th>Tamanho</th>
+                                    </tr>
+                                    </thead>
+                                    <tr ng-repeat="block in config.memory.quickBlocks[2].blocks">
+                                        <td>{{block.size}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="panel-default">
+                            <div class="panel-heading">Block 3</div>
+                            <div class="panel-body">
+                                <table class="table table-striped sortable">
+                                    <thead>
+                                    <tr>
+                                        <th>Tamanho</th>
+                                    </tr>
+                                    </thead>
+                                    <tr ng-repeat="block in config.memory.quickBlocks[3].blocks">
+                                        <td>{{block.size}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="panel-default">
+                            <div class="panel-heading">Block 4</div>
+                            <div class="panel-body">
+                                <table class="table table-striped sortable">
+                                    <thead>
+                                    <tr>
+                                        <th>Tamanho</th>
+                                    </tr>
+                                    </thead>
+                                    <tr ng-repeat="block in config.memory.quickBlocks[4].blocks">
+                                        <td>{{block.size}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="panel-default">
+                            <div class="panel-heading">Block 5</div>
+                            <div class="panel-body">
+                                <table class="table table-striped sortable">
+                                    <thead>
+                                    <tr>
+                                        <th>Tamanho</th>
+                                    </tr>
+                                    </thead>
+                                    <tr ng-repeat="block in config.memory.quickBlocks[5].blocks">
+                                        <td>{{block.size}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
         </div>
+
     </div>
+
+</div>
+</div>
 
 </div>
 

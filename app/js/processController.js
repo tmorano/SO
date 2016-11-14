@@ -47,6 +47,9 @@ sistemasOperacionais.controller('processController',
     };
 
     var iniciarMemoria = function (memoryService,args) {
+        args.memory.totalSize = args.totalMemory;
+        args.memory.size = args.totalMemory;
+
         memoryService.config = args;
         memoryService.memoryBlock = args.memoryBlock;
         memoryService.memory = args.memory;

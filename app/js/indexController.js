@@ -12,8 +12,8 @@ sistemasOperacionais.controller('indexController', function ($rootScope, $scope)
         running: false,
         memory: {
           blocks: [],
-          size: 1024,
-          totalSize: 1024
+          size: 0,
+          totalSize: 0
         }
     };
 
