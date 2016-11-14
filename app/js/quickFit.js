@@ -234,11 +234,11 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
       // Para os 4 primeiros, vou colocar um tamanho especifico
       for(var i = 0;i < orderedBlocks.length; i++){
         if(count <= 4){
-          if(orderedBlocks[i].size == eachKey.size){
+          if(orderedBlocks[i].size == eachKey.size && !orderedBlocks[i].inserted){
             if(quickFit.memory.quickBlocks[count]){
               quickFit.memory.quickBlocks[count].blocks.push(orderedBlocks[i]);
               //Para cada bloco que adicionei no quickBlocks removo do OrderedBlocks para nao inseri-lo novamente.
-              orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
+              orderedBlocks[i].inserted = true;
             }else{
               quickFit.memory.quickBlocks[count] = {
                 blocks: [orderedBlocks[i]],
@@ -246,27 +246,27 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
 
               };
 
-              orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
-              count++;
+              orderedBlocks[i].inserted = true;
             }
 
           }
         }else{
           //Para o restante, vou adicionar todos os outros tamanhos (Array: Outros)
-          if(quickFit.memory.quickBlocks[count]){
-            quickFit.memory.quickBlocks[count].blocks.push(orderedBlocks[i]);
-            orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
-          }else{
-            quickFit.memory.quickBlocks[count] = {
-              blocks: [orderedBlocks[i]],
-              size : orderedBlocks[i].size
-            };
-            orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
+          if(!orderedBlocks[i].inserted){
+            if(quickFit.memory.quickBlocks[5]){
+              quickFit.memory.quickBlocks[5].blocks.push(orderedBlocks[i]);
+              orderedBlocks[i].inserted = true;
+            }else{
+              quickFit.memory.quickBlocks[5] = {
+                blocks: [orderedBlocks[i]],
+                size : orderedBlocks[i].size
+              };
+              orderedBlocks[i].inserted = true;
+            }
           }
-
         }
       }
-
+      count++;
     })
 
   }
