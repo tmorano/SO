@@ -39,7 +39,7 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
 
     return memoryAlgorithm;
 })
-    .service('MemoryHelper',function(){
+    .service('MemoryHelper',function($filter){
         var memory;
         return {
             setMemory: function(mem){
@@ -61,10 +61,30 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
                     if(block.processo && block.processo.pid == processo.pid){
                         block.name = 'DISPONIVEL';
                         block.processo = null;
+                        if(algoritmo.quickBlocks){
+                            //Para sincronizar os blocos com os quickBlocks criados no quickFit.
+                            for(var i =1 ; i <=5; i++){
+                                var viewBlock = $filter('getById')(algoritmo.quickBlocks[i].blocks, block.id);
+                                if(viewBlock){
+                                    viewBlock.processo = null;
+                                    viewBlock.name = 'DISPONIVEL';
+                                }
+                            }
+                        }
                     }
                 });
                 memory.size += processo.memory;
-                algoritmo.config.totalMemory += processo.memory;
             }
         }
-    });
+    })
+.filter('getById', function() {
+    return function(input, id) {
+        var i=0, len=input.length;
+        for (; i<len; i++) {
+            if (+input[i].id == +id) {
+                return input[i];
+            }
+        }
+        return null;
+    }
+});

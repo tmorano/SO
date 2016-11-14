@@ -139,6 +139,7 @@
                     <th>PID</th>
                     <th>Estado</th>
                     <th ng-show="config.algoritmo == 1">Prioridade</th>
+                    <th ng-show="config.algoritmo == 1">Memoria Solicitada</th>
                     <th ng-show="config.algoritmo == 2">DeadLine</th>
                     <th ng-show="config.algoritmo == 2">DeadLineOriginal</th>
                     <th>Tempo finalizar</th>
@@ -149,6 +150,7 @@
                     <td>{{process.pid}}</td>
                     <td>{{process.state}}</td>
                     <td ng-show="config.algoritmo == 1">{{process.prioridade}}</td>
+                    <td ng-show="config.algoritmo == 1">{{process.memory}}</td>
                     <td ng-show="config.algoritmo == 2">{{process.deadLine}}</td>
                     <td ng-show="config.algoritmo == 2">{{process.deadLineOriginal}}</td>
                     <td>{{process.tempoTotal - process.tempoExecutado}}s</td>
@@ -175,6 +177,24 @@
                     <highchart class="chart" config="config.arrayOfProcessMemory" class="span9"></highchart>
                 </div>
             </div>
+        </div>
+        <div class="col-lg-6 col-sm-12" ng-show="config.memoryAlgoritmo == 2">
+            <div class="panel-default">
+                <div class="panel-heading">Quick Blocks</div>
+                <div class="panel-body">
+                    <table class="table table-striped sortable">
+                        <thead>
+                        <tr>
+                            <th>Block 1</th>
+                        </tr>
+                        </thead>
+                        <tr ng-repeat="block in config.memory.quickBlocks[1].blocks">
+                            <td>{{block.size}}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
