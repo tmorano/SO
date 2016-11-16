@@ -118,10 +118,30 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
             /** bloco auxiliar de blocos ordenados pelo tamanho **/
             quickFit.sortedBlocks.push(block);
           }else{
-            //Abortando processo pois nao existem espaco livre
-            processo.state = 'Abortado';
-            return;
-
+            //Procura algum bloco livre nas outras listas
+            quickFit.memory.quickBlocks.forEach(function (eachBlock) {
+              if(eachBlock.size >= size){
+                eachBlock.blocks.every(function (block) {
+                  if(block.processo == undefined){
+                    var viewBlock = $filter('getById')(quickFit.memory.blocks, block.id);
+                    quickFitBlock = viewBlock;
+                    viewBlock.processo = processo;
+                    viewBlock.name = 'Processo ' + processo.pid;
+                    //Adicionando no bloco quickBlocks
+                    block.processo = processo;
+                    block.name = 'Processo ' + processo.pid;
+                    return false;
+                  }else{
+                    return true;
+                  }
+                })
+              }
+            });
+            // Nenhum bloco encontrado,  abortando processo
+            if(!quickFitBlock){
+              processo.state = 'Abortado';
+              return;
+            }
           }
         }
 
@@ -220,7 +240,9 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
     //Verificar os TOP 4
     quickFit.memory.quickBlocks = [];
 
-    var topKeys = quickFit.ocorrencias.sort(function (ocorrenciaA, ocorrenciaB) {
+    var ocorrencias = angular.copy(quickFit.ocorrencias);
+
+    var topKeys =  ocorrencias.sort(function (ocorrenciaA, ocorrenciaB) {
       return ocorrenciaB.ocorrencias - ocorrenciaA.ocorrencias;
     });
 
