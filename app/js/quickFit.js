@@ -206,7 +206,7 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
       processo.state = 'Abortado';
       return;
     }
-    if(quickFit.rec > 5){
+    if(quickFit.rec > 20){
       this.ajustarBlocos();
       quickFit.rec = 0;
     }
@@ -288,7 +288,9 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
           }
         }
       }
-      count++;
+      if(quickFit.memory.quickBlocks[count]){
+        count++;
+      }
     })
 
   }

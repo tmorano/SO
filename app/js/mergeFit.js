@@ -11,8 +11,8 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
       if(this.memory.blocks.length == 0){
         mergeFit.memory.blocks.push({
           processo: null,
-          size: [0,1024],
-          size: 1024,
+          size: [0,this.memory.totalSize],
+          size: this.memory.totalSize,
           id: ++blockCounter,
           name: 'DISPONIVEL'
         });
