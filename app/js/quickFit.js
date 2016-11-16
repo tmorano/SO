@@ -1,9 +1,26 @@
-sistemasOperacionais.factory('QuickFitService', function (MemoryHelper) {
+sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter) {
   var quickFit = {};
   quickFit.rec = 0;
   quickFit.ocorrencias = [];
+  quickFit.sortedBlocks = [];
+  var tamblock = 0;
 
-  var sortedBlocks = [];
+  quickFit.desfazerAlocacoes = function(blocks){
+    blocks.forEach(function(block){
+      block.processo = null;
+      block.name = 'DISPONIVEL';
+      if(quickFit.memory.quickBlocks){
+        //Sincronizando com o quickBlocks
+        for(var i =1 ; i <=5; i++){
+          var viewBlock = $filter('getById')(quickFit.memory.quickBlocks[i].blocks, block.id);
+          if(viewBlock){
+            viewBlock.processo = null;
+            viewBlock.name = 'DISPONIVEL';
+          }
+        }
+      }
+    });
+  }
 
   quickFit.add = function(processo,newSize){
     // pega o novo tamanho (se for só aumentar) ou o tamanho do novo processo
@@ -24,16 +41,68 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper) {
 
     // Verifico se ja existe o array de requisições do quick fit
     var quickFitBlock;
-    if(quickFit.quickBlocks){
+    if(quickFit.memory.quickBlocks){
       // Buscar no array do quickFit pelo tamanho do processo
-      quickFit.quickBlocks.forEach(function (eachBlock) {
+      var blockNum = 0;
+      quickFit.memory.quickBlocks.forEach(function (eachBlock) {
         if(eachBlock.size == size){
-          eachBlock.blocks.forEach(function (block) {
+          eachBlock.blocks.every(function (block) {
             if(block.processo == undefined){
-              quickFitBlock = block;
+              var viewBlock = $filter('getById')(quickFit.memory.blocks, block.id);
+              quickFitBlock = viewBlock;
+              viewBlock.processo = processo;
+              viewBlock.name = 'Processo ' + processo.pid;
+              //Adicionando no bloco quickBlocks
+              block.processo = processo;
+              block.name = 'Processo ' + processo.pid;
+              return false;
+            }else{
+              return true;
             }
           });
           if(!quickFitBlock){
+            //Verificando se eh possivel adicionar um novo bloco:
+            if(!((tamblock + size) > quickFit.memory.totalSize)){
+              //Bloco de tamanho definido nao foi encontrado, criando novo bloco:
+              var newBlock = {
+                id: quickFit.memory.blocks.length,
+                processo: processo,
+                size: size,
+                data: [0,size],
+                name: 'Processo ' + processo.pid
+              };
+              quickFitBlock = newBlock;
+              tamblock += size;
+              quickFit.memory.quickBlocks[blockNum+1].blocks.push(newBlock);
+              quickFit.memory.blocks.push(newBlock);
+              quickFit.config.arrayOfProcessMemory.series.push(newBlock);
+              /** bloco auxiliar de blocos ordenados pelo tamanho **/
+              quickFit.sortedBlocks.push(newBlock);
+            }
+          }
+        }
+        blockNum++;
+      });
+      if(!quickFitBlock){
+        // Bloco nao foi encontrado, procurar nos bloco "OUTROS"
+        quickFit.memory.quickBlocks[5].blocks.every(function (block) {
+          //Procurando bloco com tamanho ideal ou com tamanho maior que o do processo (Fragmentação interna):
+          if(block.size >= size && block.processo == undefined){
+            var viewBlock = $filter('getById')(quickFit.memory.blocks, block.id);
+            quickFitBlock = viewBlock;
+            viewBlock.processo = processo;
+            viewBlock.name = 'Processo ' + processo.pid;
+            //Adicionando no bloco quickBlocks
+            block.processo = processo;
+            block.name = 'Processo ' + processo.pid;
+            return false;
+          }else{
+            return true;
+          }
+        });
+        if(!quickFitBlock){
+          //Verificando se eh possivel adicionar um novo bloco:
+          if(!((tamblock + size) > this.memory.totalSize)){
             //Bloco de tamanho definido nao foi encontrado, criando novo bloco:
             var block = {
               id: this.memory.blocks.length,
@@ -42,88 +111,90 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper) {
               data: [0,size],
               name: 'Processo ' + processo.pid
             };
+            tamblock += size;
+            quickFit.memory.quickBlocks[5].blocks.push(block);
             this.memory.blocks.push(block);
             this.config.arrayOfProcessMemory.series.push(block);
             /** bloco auxiliar de blocos ordenados pelo tamanho **/
-            sortedBlocks.push(block);
+            quickFit.sortedBlocks.push(block);
+          }else{
+            //Procura algum bloco livre nas outras listas
+            quickFit.memory.quickBlocks.forEach(function (eachBlock) {
+              if(eachBlock.size >= size){
+                eachBlock.blocks.every(function (block) {
+                  if(block.processo == undefined){
+                    var viewBlock = $filter('getById')(quickFit.memory.blocks, block.id);
+                    quickFitBlock = viewBlock;
+                    viewBlock.processo = processo;
+                    viewBlock.name = 'Processo ' + processo.pid;
+                    //Adicionando no bloco quickBlocks
+                    block.processo = processo;
+                    block.name = 'Processo ' + processo.pid;
+                    return false;
+                  }else{
+                    return true;
+                  }
+                })
+              }
+            });
+            // Nenhum bloco encontrado,  abortando processo
+            if(!quickFitBlock){
+              processo.state = 'Abortado';
+              return;
+            }
           }
-        }
-      });
-      if(!quickFitBlock){
-        // Bloco nao foi encontrado, procurar nos bloco "OUTROS"
-        quickFit.quickBlocks[5].blocks.forEach(function (block) {
-          //Procurando bloco com tamanho ideal ou com tamanho maior que o do processo (Fragmentação interna):
-          if(block.size >= size && block.processo == undefined){
-            quickFitBlock = block;
-          }
-        });
-        if(!quickFitBlock){
-          //Nao existem blocos disponiveis, criando novo bloco:
-          var block = {
-            id: this.memory.blocks.length,
-            processo: processo,
-            size: size,
-            data: [0,size],
-            name: 'Processo ' + processo.pid
-          };
-          this.memory.blocks.push(block);
-          this.config.arrayOfProcessMemory.series.push(block);
-          /** bloco auxiliar de blocos ordenados pelo tamanho **/
-          sortedBlocks.push(block);
         }
 
       }
       /** decrementa do tamanho total o novo tamanho (pediu mais memória) ou o tamanho
        do novo processo. Quando newSize <> undefined é uma requisição por mais memória.
        **/
-      this.memory.size = this.config.totalMemory -= (newSize || processo.memory);
+      this.memory.size -= (newSize || processo.memory);
 
     }else{
-      // Mesmo processo do BestFit
-      /** ordena para conseguir o melhor bloco **/
-      var orderedBlocks = sortedBlocks.sort(function(blockA,blockB){ return blockB.size - blockA.size; });
+      //Mesmo processo do beestFit
+      // pega o novo tamanho (se for só aumentar) ou o tamanho do novo processo
+      var size = newSize || processo.memory;
 
-      for(var i = 0;i < orderedBlocks.length; i++){
-        if(!orderedBlocks[i].processo && orderedBlocks[i].size >= size){
-          quickFitBlock = orderedBlocks[i];
+      /** ordena para conseguir o melhor bloco **/
+      quickFit.sortedBlocks.sort(function(blockA,blockB){ return blockB.size - blockA.size; });
+      var bestFitBlock;
+      for(var i = 0;i < quickFit.sortedBlocks.length; i++){
+        if(!quickFit.sortedBlocks[i].processo && quickFit.sortedBlocks[i].size >= size){
+          bestFitBlock = quickFit.sortedBlocks[i];
         }
       }
 
       /** não encontrou um bloco **/
-      if(!quickFitBlock){
+      if(!bestFitBlock){
 
-        /** procura blocos livres pra alocar **/
-        for(var i = 0;i < this.memory.blocks.length && size > 0; i++){
-          if(this.memory.blocks[i].processo) continue;
-          this.memory.blocks[i].processo = processo;
-          this.memory.blocks[i].name = 'Processo ' + processo.pid;
-          size -= this.memory.blocks[i].size;
+        /** caso o tamanho ultrapasse os limites da memória e não foi possível encontrar um bloco apropriado **/
+        if((tamblock + size) > this.memory.totalSize){
+          processo.state = 'Abortado';
+          return;
         }
-
-        /** se não achar ou se ainda sobrar o que tiver de alocar **/
-        if(size > 0){
-          var block = {
-            id: this.memory.blocks.length,
-            processo: processo,
-            size: size,
-            data: [0,size],
-            name: 'Processo ' + processo.pid
-          };
-          this.memory.blocks.push(block);
-          this.config.arrayOfProcessMemory.series.push(block);
-          /** bloco auxiliar de blocos ordenados pelo tamanho **/
-          sortedBlocks.push(block);
+        var block = {
+          id: this.memory.blocks.length,
+          processo: processo,
+          size: size,
+          data: [0,size],
+          name: 'Processo ' + processo.pid
         };
-
+        /** incrementa a quantidade total de blocos criados **/
+        tamblock += size;
+        this.memory.blocks.push(block);
+        this.config.arrayOfProcessMemory.series.push(block);
+        /** lista auxiliar de blocos ordenados pelo tamanho **/
+        quickFit.sortedBlocks.push(block);
       }else{
         /** se encontrou um bloco aloca ele **/
-        quickFitBlock.name = 'Processo ' + processo.pid;
-        quickFitBlock.processo = processo;
+        bestFitBlock.name = 'Processo ' + processo.pid;
+        bestFitBlock.processo = processo;
       }
       /** decrementa do tamanho total o novo tamanho (pediu mais memória) ou o tamanho
        do novo processo. Quando newSize <> undefined é uma requisição por mais memória.
        **/
-      this.memory.size = this.config.totalMemory -= (newSize || processo.memory);
+      this.memory.size -= (newSize || processo.memory);
     }
   }
 
@@ -135,7 +206,7 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper) {
       processo.state = 'Abortado';
       return;
     }
-    if(quickFit.rec > 20){
+    if(quickFit.rec > 5){
       this.ajustarBlocos();
       quickFit.rec = 0;
     }
@@ -148,31 +219,36 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper) {
     /** Verifica se o novo tamanho pode ser alocado **/
     if(MemoryHelper.isFull(newSize)){
       processo.state = 'Abortado';
-      /** desaloca **/
-      this.memory.blocks.forEach(function(block){
-        if(block.processo && block.processo.pid == processo.pid){
-          block.name = 'DISPONIVEL';
-          block.processo = null;
-        }
-      });
-      this.config.totalMemory = this.memory.size += processo.memory;
-      return false;
+    }else{
+      /** só aloca a nova memória se tiver espaço **/
+      this.add(processo,newSize);
     }
-    processo.memory += newSize;
-    this.add(processo,newSize);
-    return true;
+
+    if(processo.state != 'Abortado'){
+      /** se não tiver sido abortado,incrementa o tamanho da memória do processo **/
+      processo.memory += newSize;
+    }else{
+      /** procura ainda blocos que estiver alocado com o processo abortado e os libera **/
+      this.desfazerAlocacoes(this.memory.blocks.filter(function(block){ return block.processo && block.processo.pid == processo.pid }));
+      this.config.totalMemory = this.memory.size += processo.memory;
+    }
+    /** este método deve retornar true para uma alocação bem sucedida **/
+    return processo.state != 'Abortado';
   };
 
   quickFit.ajustarBlocos = function(){
     //Verificar os TOP 4
-    quickFit.quickBlocks = [];
-    var topKeys = quickFit.ocorrencias.sort(function (ocorrenciaA, ocorrenciaB) {
+    quickFit.memory.quickBlocks = [];
+
+    var ocorrencias = angular.copy(quickFit.ocorrencias);
+
+    var topKeys =  ocorrencias.sort(function (ocorrenciaA, ocorrenciaB) {
       return ocorrenciaB.ocorrencias - ocorrenciaA.ocorrencias;
     });
 
-    var orderedBlocks = sortedBlocks.sort(function(blockA,blockB){
+    var orderedBlocks = angular.copy(quickFit.sortedBlocks.sort(function(blockA,blockB){
       return blockB.size - blockA.size;
-    });
+    }));
 
     var count = 1;
     topKeys.forEach(function (eachKey) {
@@ -180,39 +256,39 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper) {
       // Para os 4 primeiros, vou colocar um tamanho especifico
       for(var i = 0;i < orderedBlocks.length; i++){
         if(count <= 4){
-          if(orderedBlocks[i].size == eachKey.size){
-            if(quickFit.quickBlocks[count]){
-              quickFit.quickBlocks[count].blocks.push(orderedBlocks[i]);
+          if(orderedBlocks[i].size == eachKey.size && !orderedBlocks[i].inserted){
+            if(quickFit.memory.quickBlocks[count]){
+              quickFit.memory.quickBlocks[count].blocks.push(orderedBlocks[i]);
               //Para cada bloco que adicionei no quickBlocks removo do OrderedBlocks para nao inseri-lo novamente.
-              orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
+              orderedBlocks[i].inserted = true;
             }else{
-              quickFit.quickBlocks[count] = {
+              quickFit.memory.quickBlocks[count] = {
                 blocks: [orderedBlocks[i]],
                 size : orderedBlocks[i].size
 
               };
 
-              orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
-              count++;
+              orderedBlocks[i].inserted = true;
             }
 
           }
         }else{
           //Para o restante, vou adicionar todos os outros tamanhos (Array: Outros)
-          if(quickFit.quickBlocks[count]){
-            quickFit.quickBlocks[count].blocks.push(orderedBlocks[i]);
-            orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
-          }else{
-            quickFit.quickBlocks[count] = {
-              blocks: [orderedBlocks[i]],
-              size : orderedBlocks[i].size
-            };
-            orderedBlocks.splice(orderedBlocks.indexOf(orderedBlocks[i]),1);
+          if(!orderedBlocks[i].inserted){
+            if(quickFit.memory.quickBlocks[5]){
+              quickFit.memory.quickBlocks[5].blocks.push(orderedBlocks[i]);
+              orderedBlocks[i].inserted = true;
+            }else{
+              quickFit.memory.quickBlocks[5] = {
+                blocks: [orderedBlocks[i]],
+                size : orderedBlocks[i].size
+              };
+              orderedBlocks[i].inserted = true;
+            }
           }
-
         }
       }
-
+      count++;
     })
 
   }
