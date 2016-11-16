@@ -50,6 +50,14 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
                     return !(block.processo && block.processo.pid == processo.pid);
                 })
             },
+            indexOfBlock: function(id){
+              for(var i = 0;i < memory.blocks.length; i++){
+                if(memory.blocks[i].processo.pid == id){
+                  return memory.blocks[i];
+                }
+              }
+              return null;
+            },
             isFull: function(size){
                 return size > memory.size || memory.size < 1
             },
@@ -61,6 +69,7 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
                     if(block.processo && block.processo.pid == processo.pid){
                         block.name = 'DISPONIVEL';
                         block.processo = null;
+                        block.usado = 0;
                         if(algoritmo.memory.quickBlocks){
                             //Para sincronizar os blocos com os quickBlocks criados no quickFit.
                             for(var i =1 ; i <=5; i++){
