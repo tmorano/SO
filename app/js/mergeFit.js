@@ -1,9 +1,59 @@
 sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval) {
     var mergeFit = {};
-    var sortedBlocks = [];
-    var tamblock = 0;
     var header;
     var blockCounter = 0;
+    var alocado = false;
+
+    mergeFit.storage = [];
+    mergeFit.storage_index = {};
+    mergeFit.swap = function(back){
+      debugger;
+      if(!back){
+
+        var processos = [];
+        mergeFit.memory.blocks.forEach(function(block){
+          if(block.processo && block.processo.state == 'Aguardando'){
+            if(!processos.hasOwnProperty(block.processo.pid)){
+              processos.push(block.processo);
+            }
+            mergeFit.memory.size += block.usado;
+            block.processo = null;
+            block.name = 'DISPONIVEL';
+            block.usado = 0;
+          }
+        });
+
+        // var blocos = mergeFit.memory.blocks.filter(function(block){
+        //   return block.processo && block.processo.state == 'Aguardando';
+        // });
+        // var blocosIndexes = Object.keys(blocos);
+        // var processos = [];
+        // for(var i = 0;i < blocos.length;i++){
+        //   if(!processos.hasOwnProperty(blocos[i].processo.pid)){
+        //     processosIndexes.push(blocos[i].processo);
+        //   }
+        // }
+        // processosIndexes = blocosIndexes.filter(function(index){
+        //    return !processosIndexes.hasOwnProperty(blocos[index].processo.pid);
+        // });
+        // mergeFit.memory.blocks.forEach(function(block){
+        //   if(block.processo && block.processo.state == 'Aguardando'){
+        //     mergeFit.memory.size += block.usado;
+        //     block.processo.isSwapped = true;
+        //     mergeFit.storage[block.processo.pid] = block.processo;
+        //     block.processo = null;
+        //     block.usado = 0;
+        //     block.name = 'DISPONIVEL';
+        //   }
+        // });
+      }else{
+        for(var i = 0;i < mergeFit.storage.length;i++){
+          if(!mergeFit.split(mergeFit.storage[i])){
+            break;
+          }
+        }
+      }
+    }
 
     mergeFit.adicionarNaMemoria = function (processo) {
       if(processo.state != 'Pronto' || processo.state == 'Abortado') return;
@@ -11,26 +61,31 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
       if(this.memory.blocks.length == 0){
         mergeFit.memory.blocks.push({
           processo: null,
-          size: [0,1024],
-          size: 1024,
+          size: [0,this.memory.size],
+          size: this.memory.size,
           id: ++blockCounter,
-          name: 'DISPONIVEL'
+          name: 'DISPONIVEL',
         });
         mergeFit.config.arrayOfProcessMemory.series = this.memory.blocks;
       }
-      if(alocado){
-        debugger;
-      }
       var novoBloco = null;
-      if(processo.memory > mergeFit.memory.size){
-        processo.state = 'Abortado';
-        return;
-      }else{
-        novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
-        alocado = false;
+
+      if(this.memory.size <= (this.memory.totalSize - (this.memory.totalSize * 0.7))){
+        mergeFit.swap(false);
+      }else if(mergeFit.storage.length > 0){
+        mergeFit.swap(true);
       }
 
-      console.log(novoBloco);
+      novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
+      alocado = false;
+
+      // if(processo.memory > mergeFit.memory.size){
+      //   processo.state = 'Abortado';
+      //   return;
+      // }else{
+      //   novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
+      //   alocado = false;
+      // }
 
       /** não conseguiu alocar **/
       if(!novoBloco){
@@ -42,8 +97,6 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
     };
 
     var lastNode;
-    var contador = 1024;
-    var alocado = false;
     mergeFit.split = function(processo,memory,current,index){
       return (function(processo,current,index){
         var self = this;
@@ -52,7 +105,6 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
         if((current.processo || (!current.processo && current.size < memory))){
           self.next = mergeFit.split(processo,memory,current.proximo,index + 1);
         }
-
 
         if(!current.processo && !alocado){
           /** fazer o split **/

@@ -35,7 +35,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
             memory : getRandomNum(2, 128),
             chance: function(){
               // chance de aumentar memória
-              return Math.random() > 0.89
+              return Math.random() > 0.97
             }
         };
 
@@ -101,8 +101,14 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                     core.tempo--;
                                 }
 
+                                if(processo.isSwapped){
+                                  debugger;
+                                }
+
                                 if(processo.chance()){
-                                  if(!memoryService.aumentarMemoria(processo)){
+                                  memoryService.aumentarMemoria(processo);
+                                  if(processo.state == 'Abortado'){
+                                    debugger;
                                     return;
                                   }
                                 }
