@@ -32,7 +32,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
           id: this.memory.blocks.length,
           processo: processo,
           size: size,
-          data: [0,size],
+          data: [[0,size]],
           name: 'Processo ' + processo.pid,
           usado: size,
         };
@@ -106,8 +106,6 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
 
     bestFit.encerrarProcesso = function(processo){
       MemoryHelper.encerrarProcesso(processo,this);
-      console.log(processo);
-      console.log(bestFit.memory.size);
       var livre = true;
       for(var i = 0;i < bestFit.memory.blocks.length;i++){
         if(bestFit.memory.blocks[i].processo){
@@ -116,8 +114,8 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
         }
       }
       // TODO: fix this
-      if(livre && bestFit.memory.size != 1024){
-         bestFit.memory.size = 1024;
+      if(livre && bestFit.memory.size != this.memory.totalSize){
+         bestFit.memory.size = this.memory.totalSize;
       }
     };
 
