@@ -22,7 +22,7 @@ sistemasOperacionais.controller('memoryController', function ($rootScope, $scope
             text: 'Processos'
         },
         xAxis: {
-            categories: ['Memory Blocks']
+            categories: ['Memory Blocks', 'VirtualMemoryBlocks']
         },
         yAxis: {
             min: 0,

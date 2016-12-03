@@ -32,7 +32,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
           id: this.memory.blocks.length,
           processo: processo,
           size: size,
-          data: [[0,size]],
+          data: [size,0],
           name: 'Processo ' + processo.pid,
           usado: size,
         };

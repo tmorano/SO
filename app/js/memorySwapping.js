@@ -50,7 +50,7 @@ var virtualMemory = {};
                                         id: virtualMemory.blocks.length,
                                         processo: processToRemove,
                                         size: processToRemove.memory,
-                                        data: [[1,processToRemove.size]],
+                                        data: [0,processToRemove.memory],
                                         name: 'Processo ' + processToRemove.pid,
                                         usado: processToRemove.memory,
                                     };
