@@ -1,8 +1,9 @@
 sistemasOperacionais.controller('processController',
       function ($rootScope, $scope, $interval,MemoryHelper,
-        AlgorithmFactoryService,MemoryAlgorithmFactoryService) {
+        AlgorithmFactoryService,MemoryAlgorithmFactoryService, MemorySwappingService) {
     var service;
     var memoryService;
+    var memorySwapping;
 
     $scope.processos = [];
     $scope.filaDePrioridade = [[], [], [], []];
@@ -16,12 +17,13 @@ sistemasOperacionais.controller('processController',
 
         service = AlgorithmFactoryService.buildAlgorithm($scope.config.algoritmo);
         memoryService = MemoryAlgorithmFactoryService.buildAlgorithm($scope.config.memoryAlgoritmo);
+        memorySwapping = MemorySwappingService;
         service.configurar(args);
         iniciarMemoria(memoryService,args);
         createProcess(service, memoryService, args.processos);
         $scope.filaDePrioridade = service.filaDePrioridade;
 
-        service.executar(memoryService);
+        service.executar(memoryService, memorySwapping);
     });
 
     $scope.$on('parar', function (events, args) {

@@ -177,7 +177,7 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
           id: this.memory.blocks.length,
           processo: processo,
           size: size,
-          data: [0,size],
+          data: [size,0],
           name: 'Processo ' + processo.pid
         };
         /** incrementa a quantidade total de blocos criados **/
@@ -206,7 +206,7 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
       processo.state = 'Abortado';
       return;
     }
-    if(quickFit.rec > 5){
+    if(quickFit.rec > 20){
       this.ajustarBlocos();
       quickFit.rec = 0;
     }
@@ -288,7 +288,9 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
           }
         }
       }
-      count++;
+      if(quickFit.memory.quickBlocks[count]){
+        count++;
+      }
     })
 
   }

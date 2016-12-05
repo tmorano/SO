@@ -4,88 +4,34 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
     var blockCounter = 0;
     var alocado = false;
 
-    mergeFit.storage = [];
-    mergeFit.storage_index = {};
-    mergeFit.swap = function(back){
-      debugger;
-      if(!back){
-
-        var processos = [];
-        mergeFit.memory.blocks.forEach(function(block){
-          if(block.processo && block.processo.state == 'Aguardando'){
-            if(!processos.hasOwnProperty(block.processo.pid)){
-              processos.push(block.processo);
-            }
-            mergeFit.memory.size += block.usado;
-            block.processo = null;
-            block.name = 'DISPONIVEL';
-            block.usado = 0;
-          }
-        });
-
-        // var blocos = mergeFit.memory.blocks.filter(function(block){
-        //   return block.processo && block.processo.state == 'Aguardando';
-        // });
-        // var blocosIndexes = Object.keys(blocos);
-        // var processos = [];
-        // for(var i = 0;i < blocos.length;i++){
-        //   if(!processos.hasOwnProperty(blocos[i].processo.pid)){
-        //     processosIndexes.push(blocos[i].processo);
-        //   }
-        // }
-        // processosIndexes = blocosIndexes.filter(function(index){
-        //    return !processosIndexes.hasOwnProperty(blocos[index].processo.pid);
-        // });
-        // mergeFit.memory.blocks.forEach(function(block){
-        //   if(block.processo && block.processo.state == 'Aguardando'){
-        //     mergeFit.memory.size += block.usado;
-        //     block.processo.isSwapped = true;
-        //     mergeFit.storage[block.processo.pid] = block.processo;
-        //     block.processo = null;
-        //     block.usado = 0;
-        //     block.name = 'DISPONIVEL';
-        //   }
-        // });
-      }else{
-        for(var i = 0;i < mergeFit.storage.length;i++){
-          if(!mergeFit.split(mergeFit.storage[i])){
-            break;
-          }
-        }
-      }
-    }
-
     mergeFit.adicionarNaMemoria = function (processo) {
-      if(processo.state != 'Pronto' || processo.state == 'Abortado') return;
+      if((processo.state != 'Pronto' || processo.state == 'Abortado') && !processo.isSwapped) return;
+
+      if(processo.isSwapped){
+        processo.isSwapped = false;
+      }
 
       if(this.memory.blocks.length == 0){
         mergeFit.memory.blocks.push({
           processo: null,
-          size: [0,this.memory.size],
+          data: [this.memory.size,0],
           size: this.memory.size,
-          id: ++blockCounter,
+          id: blockCounter++,
           name: 'DISPONIVEL',
         });
         mergeFit.config.arrayOfProcessMemory.series = this.memory.blocks;
       }
       var novoBloco = null;
 
-      if(this.memory.size <= (this.memory.totalSize - (this.memory.totalSize * 0.7))){
-        mergeFit.swap(false);
-      }else if(mergeFit.storage.length > 0){
-        mergeFit.swap(true);
-      }
-
-      novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
       alocado = false;
 
-      // if(processo.memory > mergeFit.memory.size){
-      //   processo.state = 'Abortado';
-      //   return;
-      // }else{
-      //   novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
-      //   alocado = false;
-      // }
+      if(processo.memory > mergeFit.memory.size){
+        processo.state = 'Abortado';
+        return;
+      }else{
+        novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
+        alocado = false;
+      }
 
       /** não conseguiu alocar **/
       if(!novoBloco){
@@ -102,7 +48,7 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
         var self = this;
         if(!current) return;
         /** se tiver bloco com processo pula ou se o tamanho for menor **/
-        if((current.processo || (!current.processo && current.size < memory))){
+        if((current.processo || current.isVirtual || (!current.processo && current.size < memory))){
           self.next = mergeFit.split(processo,memory,current.proximo,index + 1);
         }
 
@@ -111,27 +57,44 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
           if(current.size > memory){
             mergeFit.memory.blocks.splice(index,1);
             var livre = {
-              id: ++blockCounter,
+              id: blockCounter++,
               processo: null,
               name: 'DISPONIVEL',
               size: current.size - memory,
-              data: [0,current.size - memory],
+              data: [current.size - memory,0],
               usado: 0,
             };
             var usado = {
-              id: ++blockCounter,
+              id: blockCounter++,
               processo: processo,
               name: 'Processo ' + processo.pid,
               size: memory,
-              data: [0,memory],
+              data: [memory,0],
               usado: memory,
             };
             /** atualizando as referências **/
-            if(mergeFit.memory.blocks[index - 1]){
-              mergeFit.memory.blocks[index - 1].proximo = usado;
+
+            var previous = mergeFit.memory.blocks[index - 1];
+            idx = index - 1;
+            while(previous && previous.isVirtual){
+              previous = mergeFit.memory.blocks[idx];
             }
+
+            if(previous){
+              previous.proximo = usado;
+            }
+
+            // if(mergeFit.memory.blocks[index - 1]){
+            //   mergeFit.memory.blocks[index - 1].proximo = usado;
+            // }
             usado.proximo = livre;
-            livre.proximo = mergeFit.memory.blocks[index];
+            var next = mergeFit.memory.blocks[index];
+            idx = index;
+            while(next && next.isVirtual){
+              next = mergeFit.memory.blocks[++idx];
+            }
+            livre.proximo = next;
+            // livre.proximo = mergeFit.memory.blocks[index];
             mergeFit.memory.blocks.splice(index,0,livre);
             mergeFit.memory.blocks.splice(index,0,usado);
             alocado = true;
@@ -173,7 +136,6 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
         }
 
         if(!bloco || processo.state == 'Abortado'){
-          debugger;
           return false;
         }
         processo.memory += newSize;
@@ -200,22 +162,35 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
           block.usado = 0;
         }
 
-        if(!block.processo && next && !next.processo){
+        if(!block.processo && next && !next.processo && (!block.isVirtual && !next.isVirtual)){
           /** merge **/
-          var previous = mergeFit.memory.blocks[index - 1];
           var mergeBlocks = mergeFit.memory.blocks.splice(index,2);
           var merged = {
-            id: ++blockCounter,
+            id: blockCounter++,
             name: 'DISPONIVEL',
             processo: null,
             size: mergeBlocks[0].size + mergeBlocks[1].size,
             usado: 0,
-            data: [0,mergeBlocks[0].size + mergeBlocks[1].size],
+            data: [mergeBlocks[0].size + mergeBlocks[1].size,0],
+          }
+          var previous = mergeFit.memory.blocks[index - 1];
+          indx = index - 1;
+          while(previous && previous.isVirtual){
+            previous = mergeFit.memory.blocks[--indx]
           }
           if(previous){
             previous.proximo = merged;
           }
-          merged.proximo = mergeFit.memory.blocks[index];
+          // if(previous){
+          //   previous.proximo = merged;
+          // }
+          var proximo = mergeFit.memory.blocks[index];
+          idx = index;
+          while(proximo && proximo.isVirtual){
+            proximo = mergeFit.memory.blocks[++idx];
+          }
+          merged.proximo = proximo;
+          // merged.proximo = mergeFit.memory.blocks[index];
           mergeFit.memory.blocks.splice(index,0,merged);
         }
         return mergeFit.memory.blocks[index];

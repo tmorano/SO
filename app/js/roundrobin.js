@@ -15,6 +15,8 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
         // Processadores do Programa
         roundrobin.availableProcessors = angular.copy(config.cores);
 
+        config.filaDePrioridade = roundrobin.filaDePrioridade;
+
 
     };
 
@@ -35,7 +37,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
             memory : getRandomNum(2, 128),
             chance: function(){
               // chance de aumentar memória
-              return Math.random() > 0.97
+              return Math.random() > 0.89
             }
         };
 
@@ -46,20 +48,20 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
         return proc;
     };
 
-    roundrobin.executar = function (memoryService) {
+    roundrobin.executar = function (memoryService, memorySwapping) {
         var func = $interval(function () {
             // Verifica se o algoritmo esta rodando
             if (!roundrobin.config.running) {
                 $interval.cancel(func);
                 return;
             }
-            execRoundRobin(roundrobin.config, memoryService)
+            execRoundRobin(roundrobin.config, memoryService, memorySwapping)
         }, 500);
     };
 
 
     //Executa o processo
-    var execRoundRobin = function (config, memoryService) {
+    var execRoundRobin = function (config, memoryService, memorySwapping) {
         var processo = buscarProximoProcesso();
 
         if (processo) {
@@ -71,6 +73,8 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
             if (currentProcessor) {
                 var core = config.cores[currentProcessor.id];
 
+                //
+                memorySwapping.swap(memoryService,processo.isSwapped ? processo : null);
                 // Adiciona na memoria
                 memoryService.adicionarNaMemoria(processo);
 
@@ -101,14 +105,9 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                     core.tempo--;
                                 }
 
-                                if(processo.isSwapped){
-                                  debugger;
-                                }
-
                                 if(processo.chance()){
                                   memoryService.aumentarMemoria(processo);
                                   if(processo.state == 'Abortado'){
-                                    debugger;
                                     return;
                                   }
                                 }
