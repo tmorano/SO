@@ -177,7 +177,7 @@ sistemasOperacionais.factory('QuickFitService', function (MemoryHelper, $filter)
           id: this.memory.blocks.length,
           processo: processo,
           size: size,
-          data: [0,size],
+          data: [size,0],
           name: 'Processo ' + processo.pid
         };
         /** incrementa a quantidade total de blocos criados **/

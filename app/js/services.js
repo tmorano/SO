@@ -66,7 +66,7 @@ sistemasOperacionais.factory('MemoryAlgorithmFactoryService', function (BestFitS
             },
             encerrarProcesso: function(processo,algoritmo){
                 memory.blocks.forEach(function(block){
-                    if(block.processo && block.processo.pid == processo.pid){
+                    if(!block.virtual && block.processo && block.processo.pid == processo.pid){
                         block.name = 'DISPONIVEL';
                         block.processo = null;
                         block.usado = 0;
