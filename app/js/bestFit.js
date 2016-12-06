@@ -61,7 +61,7 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
       if(bestFit.config.arrayOfProcessMemory.series.length == 0){
         bestFit.config.arrayOfProcessMemory.series = bestFit.memory.blocks;
       }
-      if(processo.state != 'Pronto') return;
+      if(processo.state != 'Pronto' && !processo.isSwapped) return;
 
       if(processo.memory > bestFit.memory.size){
         processo.state = 'Abortado';

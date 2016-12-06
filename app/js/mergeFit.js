@@ -5,11 +5,7 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
     var alocado = false;
 
     mergeFit.adicionarNaMemoria = function (processo) {
-      if((processo.state != 'Pronto' || processo.state == 'Abortado') && !processo.isSwapped) return;
-
-      if(processo.isSwapped){
-        processo.isSwapped = false;
-      }
+      if(processo.state != 'Pronto' || processo.state == 'Abortado') return;
 
       if(this.memory.blocks.length == 0){
         mergeFit.memory.blocks.push({
@@ -72,8 +68,13 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
               data: [memory,0],
               usado: memory,
             };
-            /** atualizando as referências **/
 
+            if(!processo.blocks){
+              processo.blocks = [];
+            }
+            processo.blocks.push(usado.id);
+
+            /** atualizando as referências **/
             var previous = mergeFit.memory.blocks[index - 1];
             idx = index - 1;
             while(previous && previous.isVirtual){
@@ -101,10 +102,13 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
             lastBlockProcess[processo.pid] = usado;
             return usado;
           }else{
-            /** só aloca quando for o tamanho **/
+            if(current.size < memory){
+              debugger;
+            }
+            /** só aloca quando for o tamanho ou menor que ele **/
             current.processo = processo;
             current.name = 'Processo ' + processo.pid;
-            current.usado = memory < current.size ? memory : current.size;
+            current.usado = memory;
             lastBlockProcess[processo.pid] = current;
             alocado = true;
             return current;
@@ -115,10 +119,14 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
     }
 
     var lastBlockProcess = [];
-    mergeFit.aumentarMemoria = function(processo){
+    mergeFit.aumentarMemoria = function(processo,memorySwapping){
       var newSize = MemoryHelper.random(2,32);
       if(newSize > mergeFit.memory.size){
         processo.state = 'Abortado';
+      }
+      var memoryUsage =  Math.floor(((this.memory.totalSize - (this.memory.size - newSize)) / this.memory.totalSize) * 100);
+      if(memoryUsage > 70){
+        memorySwapping.swap(this,null,newSize);
       }
 
       /** recupera o ultimo bloco alocado **/
@@ -152,11 +160,11 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
 
     mergeFit.merge = function(processo,block,index){
       return (function(processo,block,index){
-        if(!block) return;
+        if(!block || (block && block.isVirtual)) return;
         var next =  mergeFit.merge(processo,block.proximo,index + 1);
 
 
-        if(block.processo && block.processo.pid == processo.pid){
+        if(block.processo && processo && block.processo.pid == processo.pid){
           block.processo = null;
           block.name = 'DISPONIVEL';
           block.usado = 0;
@@ -197,8 +205,8 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
       })(processo,block,index);
     }
 
-    mergeFit.encerrarProcesso = function(processo,block,index){
-      this.memory.size += processo.memory;
+    mergeFit.encerrarProcesso = function(processo,isSwap){
+      if(!isSwap) this.memory.size += processo.memory;
       this.merge(processo,this.memory.blocks[0],0);
     };
 

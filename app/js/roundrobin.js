@@ -74,7 +74,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                 var core = config.cores[currentProcessor.id];
 
                 //
-                memorySwapping.swap(memoryService,processo.isSwapped ? processo : null);
+                memorySwapping.swap(memoryService);
                 // Adiciona na memoria
                 memoryService.adicionarNaMemoria(processo);
 
@@ -105,8 +105,8 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                     core.tempo--;
                                 }
 
-                                if(processo.chance()){
-                                  memoryService.aumentarMemoria(processo);
+                                if(processo.chance() && false){
+                                  memoryService.aumentarMemoria(processo,memorySwapping);
                                   if(processo.state == 'Abortado'){
                                     return;
                                   }
