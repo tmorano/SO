@@ -54,6 +54,10 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
           if(current.size < memory){
             debugger;
           }
+          if(!processo.blocks){
+            processo.blocks = [];
+          }
+          processo.blocks.push(current.id);
           /** só aloca quando for o tamanho ou menor que ele **/
           current.processo = processo;
           current.name = 'Processo ' + processo.pid;
@@ -125,8 +129,9 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
     mergeFit.aumentarMemoria = function(processo,memorySwapping){
       var newSize = MemoryHelper.random(2,32);
       if(newSize > mergeFit.memory.size){
-        processo.state = 'Abortado';
+        debugger;
       }
+      memorySwapping.swap(this);
 
       /** recupera o ultimo bloco alocado **/
       var bloco = lastBlockProcess[processo.pid];

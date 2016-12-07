@@ -126,6 +126,9 @@ var virtualMemory = {};
           })
           .every(function(processo){
             var processBlocks = [];
+            if(!processo.blocks){
+              debugger;
+            }
             processo.blocks.forEach(function(id){
               processBlocks = processBlocks.concat(virtualMemory.blocks.filter(function(block){
                 return block.id == id;

@@ -76,9 +76,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                 //
                 memorySwapping.swap(memoryService);
                 if(memorySwapping.hasSwapped(processo)){
-                  // debugger;
                   if(!memorySwapping.swapBack(memoryService,processo)){
-                    debugger;
                     return;
                   };
                 }
@@ -143,7 +141,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                 processo.progress = 100;
                                 processo.state = 'Concluido';
                                 processo.progressStyle = 'success';
-                                memoryService.encerrarProcesso(processo);
+                                memoryService.encerrarProcesso(processo,false);
                             }
                         }
 
