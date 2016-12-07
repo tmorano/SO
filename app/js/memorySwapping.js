@@ -4,87 +4,141 @@ var virtualMemory = {};
     var sortedVirtualBlocks = [];
     var processToRemove = {};
 
-    virtualMemory.swap = function (memoryService,newMemory) {
+    virtualMemory.needsSwap = function(memoryService,memory){
+      //Vamos verificar o espaço da memoria está abaixo de 70%
+      return Math.floor(((memoryService.memory.totalSize - (memory ? (memoryService.memory.size - memory) : memoryService.memory.size)) / memoryService.memory.totalSize) * 100);
+    }
 
-        //Vamos verificar o espaço da memoria está abaixo de 70%
-        var memoryUsage =  function(){
-          return Math.floor(((memoryService.memory.totalSize - (newMemory ? (memoryService.memory.size - newMemory) : memoryService.memory.size)) / memoryService.memory.totalSize) * 100);;
+    virtualMemory.swapBack = function(memoryService,processo){
+      var success = true;
+      var blocks = this.blocks.filter(function(block){
+        return block.processo && block.processo.pid == processo.pid;
+      });
+      if(blocks.length == 0) {
+        debugger;
+        return;
+      }
+      blocks.every(function(block){
+        if(memoryService.split){
+          var threshold = Math.floor( (memoryService.memory.totalSize -  memoryService.memory.size) / memoryService.memory.totalSize * 100 );
+          var needsSwap = Math.floor( (memoryService.memory.totalSize -  memoryService.memory.size - block.size) / memoryService.memory.totalSize * 100);
+          if(threshold > 70){
+            debugger;
+          }
+          if(needsSwap > 70){
+            debugger;
+          }
+          var blockInMemory = memoryService.split(processo,block.size,memoryService.memory.blocks[0],0);
+          processo.blocks.splice(processo.blocks.indexOf(block.id),1);
+          block.name = 'DISPONIVEL';
+          block.processo = null;
+          block.usado = 0;
+          if(!blockInMemory){
+            processo.state = 'Abortado';
+            success = false;
+            return true;
+          }
+          return false;
         }
-        var stop = false;
-        if((usage = memoryUsage()) > 70){
-            // Realizar o swap dos processos aguardando, iniciar pelo ultimo da fila de prioridades
-            //Percorrer todas as filas de prioridade do round robin
+      });
+      return success;
+    }
 
-            var processos = [];
-            memoryService.config.filaDePrioridade.forEach(function(fila){
-              fila.filter(function(processo){
-                return processo.state == 'Aguardando';
-              })
-              .reverse().every(function(processo){
-                var processBlocks = [];
+    virtualMemory.hasSwapped = function(processo){
+      for(var i = 0;processo.blocks && i < processo.blocks.length;i++){
+        if(isNaN(processo.blocks[i])){
+          return true;
+        }
+      }
+      return false;
+    }
 
-                processo.blocks.forEach(function(id){
-                  processBlocks = processBlocks.concat(memoryService.memory.blocks.filter(function(block){
-                    return block.id == id;
-                  }))
-                });
+    virtualMemory.swap = function (memoryService) {
+      var stop = false;
+      if((usage = virtualMemory.needsSwap(memoryService)) > 70){
+        // Realizar o swap dos processos aguardando, iniciar pelo ultimo da fila de prioridades
+        //Percorrer todas as filas de prioridade do round robin
 
-                for(var i = 0;i < processBlocks.length;i++){
-                  if((usage = memoryUsage()) > 70 && !processBlocks[i].isVirtual){
-                    var block = processBlocks.splice(i,1)[0];
-                    var newBlock = angular.copy(block);
-                    block.processo = null;
-                    block.name = 'DISPONIVEL';
-                    block.usado = 0;
+        memoryService.config.filaDePrioridade.forEach(function(fila){
+          fila.filter(function(processo){
+            return processo.state == 'Aguardando';
+          })
+          .reverse().every(function(processo){
+            var processBlocks = [],processBlocksIDs = [];
 
-                    newBlock.id = btoa(newBlock.id);
-                    newBlock.processo = processo;
-                    newBlock.isVirtual = true;
-                    newBlock.data = newBlock.data.reverse();
-                    delete newBlock.proximo;
-
-                    memoryService.config.memory.size += block.size;
-                    memoryService.encerrarProcesso(null,true);
-                    virtualMemory.allocate(processo,newBlock,memoryService);
-                  }else{
-                    stop = true;
-                    break;
-                  }
-                }
-                return !stop;
-              });
+            processo.blocks.forEach(function(id){
+              processBlocks = processBlocks.concat(memoryService.memory.blocks.filter(function(block){
+                return block.id == id;
+              }))
             });
-        }else{
-          if(virtualMemory.blocks.length == 0) return;
-          memoryService.config.filaDePrioridade.forEach(function(fila){
-            fila.filter(function(processo){
-              return processo.state == 'Abortado';
-            })
-            .every(function(processo){
-              var processBlocks = [];
-              processo.blocks.forEach(function(id){
-                processBlocks = processBlocks.concat(virtualMemory.blocks.filter(function(block){
-                  return block.id == id;
-                }));
-              });
 
-              if(memoryService.split){
-                for(var i = 0;i < processBlocks.length; i++){
-                  if((usage = memoryUsage()) <= 70){
-                    memoryService.split(processo,processBlocks[i].size,memoryService.memory.blocks[0],0);
-                    processBlocks[i].name = 'DISPONIVEL';
-                    processBlocks[i].usado = 0;
-                    processBlocks[i].processo = null;
-                  }else{
-                    stop = true;
-                    break;
-                  }
+            for(var i = 0;i < processBlocks.length;i++){
+              if(processBlocks[i].isVirtual){
+                continue;
+              }
+              if((usage = virtualMemory.needsSwap(memoryService)) > 70){
+                // var block = processBlocks.splice(i,1)[0];
+                processo.blocks.splice(processo.blocks.indexOf(processBlocks[i].id),1);
+                var block = processBlocks[i];
+                var newBlock = angular.copy(block);
+
+                block.processo = null;
+                block.name = 'DISPONIVEL';
+                block.usado = 0;
+
+                newBlock.id = btoa(newBlock.id);
+                newBlock.processo = processo;
+                newBlock.isVirtual = true;
+                newBlock.data = newBlock.data.reverse();
+                processBlocksIDs.push(newBlock.id);
+                delete newBlock.proximo;
+
+                memoryService.config.memory.size += block.size;
+                memoryService.encerrarProcesso(null,true);
+                virtualMemory.allocate(processo,newBlock,memoryService);
+
+              }else{
+                stop = true;
+                break;
+              }
+            }
+            if(processBlocksIDs.length > 0){
+              processo.blocks = processo.blocks.concat(processBlocksIDs);
+            }
+            return !stop;
+          });
+        });
+      }else{
+        if(virtualMemory.blocks.length == 0) return;
+        memoryService.config.filaDePrioridade.forEach(function(fila){
+          fila.filter(function(processo){
+            return processo.state == 'Abortado';
+          })
+          .every(function(processo){
+            var processBlocks = [];
+            processo.blocks.forEach(function(id){
+              processBlocks = processBlocks.concat(virtualMemory.blocks.filter(function(block){
+                return block.id == id;
+              }));
+            });
+
+            if(memoryService.split){
+              for(var i = 0;i < processBlocks.length; i++){
+                if((usage = virtualMemory.needsSwap()) <= 70){
+                  memoryService.split(processo,processBlocks[i].size,memoryService.memory.blocks[0],0);
+                  processBlocks[i].name = 'DISPONIVEL';
+                  processBlocks[i].usado = 0;
+                  processBlocks[i].processo = null;
+                }else{
+                  stop = true;
+                  break;
                 }
               }
-              return !stop;
-            })
-          });
-        }
+            }
+            return !stop;
+          })
+        });
+      }
     }
 
     virtualMemory.allocate = function(processo,block,memoryService){
@@ -123,4 +177,4 @@ var virtualMemory = {};
     }
 
     return virtualMemory;
-});
+  });

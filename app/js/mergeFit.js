@@ -21,100 +21,106 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
 
       alocado = false;
 
+      // if(processo.memory > mergeFit.memory.size){
+      //   processo.state = 'Abortado';
+      //   return;
+      // }else{
+      //   novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
+      //   alocado = false;
+      // }
       if(processo.memory > mergeFit.memory.size){
-        processo.state = 'Abortado';
-        return;
-      }else{
-        novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
-        alocado = false;
+        debugger;
       }
+      novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
+      alocado = false;
 
       /** não conseguiu alocar **/
       if(!novoBloco){
         processo.state = 'Abortado';
+        debugger;
         return;
       }
 
-      this.memory.size -= processo.memory;
+      // this.memory.size -= processo.memory;
     };
 
     var lastNode;
     mergeFit.split = function(processo,memory,current,index){
       return (function(processo,current,index){
         var self = this;
-        if(!current) return;
-        /** se tiver bloco com processo pula ou se o tamanho for menor **/
-        if((current.processo || current.isVirtual || (!current.processo && current.size < memory))){
-          self.next = mergeFit.split(processo,memory,current.proximo,index + 1);
+
+        if(!current){
+          return null;
         }
 
-        if(!current.processo && !alocado){
-          /** fazer o split **/
-          if(current.size > memory){
-            mergeFit.memory.blocks.splice(index,1);
-            var livre = {
-              id: blockCounter++,
-              processo: null,
-              name: 'DISPONIVEL',
-              size: current.size - memory,
-              data: [current.size - memory,0],
-              usado: 0,
-            };
-            var usado = {
-              id: blockCounter++,
-              processo: processo,
-              name: 'Processo ' + processo.pid,
-              size: memory,
-              data: [memory,0],
-              usado: memory,
-            };
-
-            if(!processo.blocks){
-              processo.blocks = [];
-            }
-            processo.blocks.push(usado.id);
-
-            /** atualizando as referências **/
-            var previous = mergeFit.memory.blocks[index - 1];
-            idx = index - 1;
-            while(previous && previous.isVirtual){
-              previous = mergeFit.memory.blocks[idx];
-            }
-
-            if(previous){
-              previous.proximo = usado;
-            }
-
-            // if(mergeFit.memory.blocks[index - 1]){
-            //   mergeFit.memory.blocks[index - 1].proximo = usado;
-            // }
-            usado.proximo = livre;
-            var next = mergeFit.memory.blocks[index];
-            idx = index;
-            while(next && next.isVirtual){
-              next = mergeFit.memory.blocks[++idx];
-            }
-            livre.proximo = next;
-            // livre.proximo = mergeFit.memory.blocks[index];
-            mergeFit.memory.blocks.splice(index,0,livre);
-            mergeFit.memory.blocks.splice(index,0,usado);
-            alocado = true;
-            lastBlockProcess[processo.pid] = usado;
-            return usado;
-          }else{
-            if(current.size < memory){
-              debugger;
-            }
-            /** só aloca quando for o tamanho ou menor que ele **/
-            current.processo = processo;
-            current.name = 'Processo ' + processo.pid;
-            current.usado = memory;
-            lastBlockProcess[processo.pid] = current;
-            alocado = true;
-            return current;
+        if(!current.processo && !current.isVirtual && current.size == memory){
+          if(current.size < memory){
+            debugger;
           }
-        }
-        return self.next;
+          /** só aloca quando for o tamanho ou menor que ele **/
+          current.processo = processo;
+          current.name = 'Processo ' + processo.pid;
+          current.usado = memory;
+          lastBlockProcess[processo.pid] = current;
+          alocado = true;
+          mergeFit.memory.size -= memory;
+          return current;
+        }else if(!current.processo && !current.isVirtual && current.size > memory){
+          mergeFit.memory.blocks.splice(index,1);
+          var livre = {
+            id: blockCounter++,
+            processo: null,
+            name: 'DISPONIVEL',
+            size: current.size - memory,
+            data: [current.size - memory,0],
+            usado: 0,
+          };
+          var usado = {
+            id: blockCounter++,
+            processo: processo,
+            name: 'Processo ' + processo.pid,
+            size: memory,
+            data: [memory,0],
+            usado: memory,
+          };
+
+          if(!processo.blocks){
+            processo.blocks = [];
+          }
+          processo.blocks.push(usado.id);
+
+          /** atualizando as referências **/
+          var previous = mergeFit.memory.blocks[index - 1];
+          idx = index - 1;
+          while(previous && previous.isVirtual){
+            previous = mergeFit.memory.blocks[idx];
+          }
+
+          if(previous){
+            previous.proximo = usado;
+          }
+
+          // if(mergeFit.memory.blocks[index - 1]){
+          //   mergeFit.memory.blocks[index - 1].proximo = usado;
+          // }
+          usado.proximo = livre;
+          var next = mergeFit.memory.blocks[index];
+          idx = index;
+          while(next && next.isVirtual){
+            next = mergeFit.memory.blocks[++idx];
+          }
+          livre.proximo = next;
+          // livre.proximo = mergeFit.memory.blocks[index];
+          mergeFit.memory.blocks.splice(index,0,livre);
+          mergeFit.memory.blocks.splice(index,0,usado);
+          alocado = true;
+          lastBlockProcess[processo.pid] = usado;
+          mergeFit.memory.size -= memory;
+          return usado;
+      }else if(!current.isVirtual){
+        self.next = mergeFit.split(processo,memory,current.proximo,index + 1);
+      }
+      return self.next;
       })(processo,current,index);
     }
 
@@ -123,10 +129,6 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
       var newSize = MemoryHelper.random(2,32);
       if(newSize > mergeFit.memory.size){
         processo.state = 'Abortado';
-      }
-      var memoryUsage =  Math.floor(((this.memory.totalSize - (this.memory.size - newSize)) / this.memory.totalSize) * 100);
-      if(memoryUsage > 70){
-        memorySwapping.swap(this,null,newSize);
       }
 
       /** recupera o ultimo bloco alocado **/
@@ -144,6 +146,7 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
         }
 
         if(!bloco || processo.state == 'Abortado'){
+          debugger;
           return false;
         }
         processo.memory += newSize;
@@ -158,7 +161,7 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
       return processo.state != 'Abortado';
     };
 
-    mergeFit.merge = function(processo,block,index){
+    mergeFit.merge = function(processo,block,index,isSwap){
       return (function(processo,block,index){
         if(!block || (block && block.isVirtual)) return;
         var next =  mergeFit.merge(processo,block.proximo,index + 1);
@@ -167,6 +170,10 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
         if(block.processo && processo && block.processo.pid == processo.pid){
           block.processo = null;
           block.name = 'DISPONIVEL';
+          mergeFit.memory.size += block.size;
+          if(block.usado != block.size){
+            debugger;
+          }
           block.usado = 0;
         }
 
@@ -206,8 +213,8 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
     }
 
     mergeFit.encerrarProcesso = function(processo,isSwap){
-      if(!isSwap) this.memory.size += processo.memory;
-      this.merge(processo,this.memory.blocks[0],0);
+      // if(!isSwap) this.memory.size += processo.memory;
+      this.merge(processo,this.memory.blocks[0],0,isSwap);
     };
 
     return mergeFit;
