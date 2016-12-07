@@ -1,183 +1,218 @@
-sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) {
-    var roundrobin = {};
+sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval) {
+    var mergeFit = {};
+    var header;
+    var blockCounter = 0;
+    var alocado = false;
 
-    roundrobin.ultimaFilaProcessada = 0;
-    roundrobin.availableProcessors = [];
+    mergeFit.adicionarNaMemoria = function (processo) {
+        if(processo.state != 'Pronto' || processo.state == 'Abortado') return;
 
-    //Configura o servico especifico de Round Robin
-    roundrobin.configurar = function (config) {
-        //Inclui fila de prioridade
-        roundrobin.filaDePrioridade = [[], [], [], []];
-        //Quantum
-        roundrobin.quantum = config.quantum;
-        //Configuracoes do index
-        roundrobin.config = config;
-        // Processadores do Programa
-        roundrobin.availableProcessors = angular.copy(config.cores);
-
-        config.filaDePrioridade = roundrobin.filaDePrioridade;
-
-
-    };
-
-    roundrobin.req = 0;
-
-    // Cria processo especifico para o Round Robin
-    roundrobin.createProcess = function (scopeProccesses) {
-        var prioridade = getRandomNum(0,3);
-        var pid = scopeProccesses.length;
-        var proc = {
-            pid: pid,
-            processo: "Processo " + pid,
-            progress: 0,
-            state: 'Pronto',
-            prioridade: prioridade,
-            tempoExecutado: 0,
-            tempoTotal: getRandomNum(4,20),
-            memory : getRandomNum(2, 128),
-            chance: function(){
-                // chance de aumentar memória
-                return Math.random() > 0.89
-            }
-        };
-
-        //Adiciona na fila de prioridades
-        roundrobin.filaDePrioridade[prioridade].push(proc);
-        scopeProccesses.push(proc);
-        //Retorna processo para scope
-        return proc;
-    };
-
-    roundrobin.executar = function (memoryService, memorySwapping) {
-        var func = $interval(function () {
-            // Verifica se o algoritmo esta rodando
-            if (!roundrobin.config.running) {
-                $interval.cancel(func);
-                return;
-            }
-            execRoundRobin(roundrobin.config, memoryService, memorySwapping)
-        }, 500);
-    };
-
-
-    //Executa o processo
-    var execRoundRobin = function (config, memoryService, memorySwapping) {
-        var processo = buscarProximoProcesso();
-
-        if (processo) {
-            //Busca os objetos originais para que possam ser alterados na View
-            var currentProcessor = roundrobin.availableProcessors.shift();
-            var quantum = roundrobin.quantum;
-
-            //Caso hajam processadores disponiveis
-            if (currentProcessor) {
-                var core = config.cores[currentProcessor.id];
-
-                //
-                memorySwapping.swap(memoryService);
-                if(memorySwapping.hasSwapped(processo)){
-                    // debugger;
-                    if(!memorySwapping.swapBack(memoryService,processo)){
-                        debugger;
-                        return;
-                    };
-                }
-                // Adiciona na memoria
-                memoryService.adicionarNaMemoria(processo);
-
-                core.state = 'Executando';
-                core.processo = processo;
-                core.tempo = quantum;
-                core.interval = false;
-
-                if (core.interval == false) {
-                    core.interval = $interval(function () {
-
-                        if(processo.state == 'Abortado'){
-                            $interval.cancel(core.interval);
-                            roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
-                            core.state = 'Parado';
-                            core.processo = undefined;
-                            core.interval = false;
-                            core.tempo = 0;
-                            processo.progress = 100;
-                            processo.progressStyle = 'danger';
-
-                        }else {
-                            if (core.tempo > 0 && processo.tempoExecutado < processo.tempoTotal) {
-                                var coreTempo = core.tempo - 1;
-                                if (coreTempo < 0) {
-                                    core.tempo = 0;
-                                } else {
-                                    core.tempo--;
-                                }
-
-                                if(processo.chance()){
-                                    memoryService.aumentarMemoria(processo,memorySwapping);
-                                    if(processo.state == 'Abortado'){
-                                        return;
-                                    }
-                                }
-
-                                processo.state = 'Executando';
-                                processo.progressStyle = 'default';
-                                processo.tempoExecutado += 1;
-                                processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
-                            } else if (core.tempo == 0 && processo.tempoExecutado < processo.tempoTotal) {
-                                $interval.cancel(core.interval);
-                                roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
-                                processo.state = 'Aguardando';
-                                processo.progressStyle = 'warning';
-                                roundrobin.filaDePrioridade[processo.prioridade].push(core.processo);
-                                core.state = 'Parado';
-                                core.processo = undefined;
-                                core.interval = false;
-                                core.tempo = 0;
-                            } else if (processo.tempoExecutado == processo.tempoTotal) {
-                                $interval.cancel(core.interval);
-                                roundrobin.availableProcessors.splice(currentProcessor.id, 0, currentProcessor);
-                                core.state = 'Parado';
-                                core.processo = undefined;
-                                core.interval = false;
-                                core.tempo = 0;
-                                processo.progress = 100;
-                                processo.state = 'Concluido';
-                                processo.progressStyle = 'success';
-                                memoryService.encerrarProcesso(processo);
-                            }
-                        }
-
-                    }, 1000);
-                }
-            }
-            else {
-                roundrobin.filaDePrioridade[processo.prioridade].push(processo);
-            }
+        if(this.memory.blocks.length == 0){
+            mergeFit.memory.blocks.push({
+                processo: null,
+                data: [this.memory.size,0],
+                size: this.memory.size,
+                id: blockCounter++,
+                name: 'DISPONIVEL',
+            });
+            mergeFit.config.arrayOfProcessMemory.series = this.memory.blocks;
         }
-    };
+        var novoBloco = null;
 
+        alocado = false;
 
+        // if(processo.memory > mergeFit.memory.size){
+        //   processo.state = 'Abortado';
+        //   return;
+        // }else{
+        //   novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
+        //   alocado = false;
+        // }
 
-    var buscarProximoProcesso = function () {
-        var processo;
-        if(roundrobin.filaDePrioridade[0].length == 0
-            && roundrobin.filaDePrioridade[1].length == 0
-            && roundrobin.filaDePrioridade[2].length == 0
-            && roundrobin.filaDePrioridade[3].length == 0){
-            return undefined;
-        }else if(roundrobin.ultimaFilaProcessada < 4){
-            processo = roundrobin.filaDePrioridade[roundrobin.ultimaFilaProcessada].shift();
-            roundrobin.ultimaFilaProcessada += 1 ;
-        }else if(roundrobin.ultimaFilaProcessada == 4){
-            roundrobin.ultimaFilaProcessada = 0;
-            return buscarProximoProcesso();
+        novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
+        alocado = false;
+
+        /** não conseguiu alocar **/
+        if(!novoBloco){
+            processo.state = 'Abortado';
+            return;
         }
-        return processo;
+
+        // this.memory.size -= processo.memory;
     };
 
-    function getRandomNum(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+    var lastNode;
+    mergeFit.split = function(processo,memory,current,index){
+        return (function(processo,current,index){
+            var self = this;
+
+            if(!current){
+                return null;
+            }
+
+            if(!current.processo && !current.isVirtual && current.size == memory){
+                if(current.size < memory){
+                    debugger;
+                }
+                /** só aloca quando for o tamanho ou menor que ele **/
+                current.processo = processo;
+                current.name = 'Processo ' + processo.pid;
+                current.usado = memory;
+                lastBlockProcess[processo.pid] = current;
+                alocado = true;
+                mergeFit.memory.size -= memory;
+                return current;
+            }else if(!current.processo && !current.isVirtual && current.size > memory){
+                mergeFit.memory.blocks.splice(index,1);
+                var livre = {
+                    id: blockCounter++,
+                    processo: null,
+                    name: 'DISPONIVEL',
+                    size: current.size - memory,
+                    data: [current.size - memory,0],
+                    usado: 0,
+                };
+                var usado = {
+                    id: blockCounter++,
+                    processo: processo,
+                    name: 'Processo ' + processo.pid,
+                    size: memory,
+                    data: [memory,0],
+                    usado: memory,
+                };
+
+                if(!processo.blocks){
+                    processo.blocks = [];
+                }
+                processo.blocks.push(usado.id);
+
+                /** atualizando as referências **/
+                var previous = mergeFit.memory.blocks[index - 1];
+                idx = index - 1;
+                while(previous && previous.isVirtual){
+                    previous = mergeFit.memory.blocks[idx];
+                }
+
+                if(previous){
+                    previous.proximo = usado;
+                }
+
+                // if(mergeFit.memory.blocks[index - 1]){
+                //   mergeFit.memory.blocks[index - 1].proximo = usado;
+                // }
+                usado.proximo = livre;
+                var next = mergeFit.memory.blocks[index];
+                idx = index;
+                while(next && next.isVirtual){
+                    next = mergeFit.memory.blocks[++idx];
+                }
+                livre.proximo = next;
+                // livre.proximo = mergeFit.memory.blocks[index];
+                mergeFit.memory.blocks.splice(index,0,livre);
+                mergeFit.memory.blocks.splice(index,0,usado);
+                alocado = true;
+                lastBlockProcess[processo.pid] = usado;
+                mergeFit.memory.size -= memory;
+                return usado;
+            }else if(!current.isVirtual){
+                self.next = mergeFit.split(processo,memory,current.proximo,index + 1);
+            }
+            return self.next;
+        })(processo,current,index);
     }
 
-    return roundrobin;
+    var lastBlockProcess = [];
+    mergeFit.aumentarMemoria = function(processo,memorySwapping){
+        var newSize = MemoryHelper.random(2,32);
+        if(newSize > mergeFit.memory.size){
+            processo.state = 'Abortado';
+        }
+
+        /** recupera o ultimo bloco alocado **/
+        var bloco = lastBlockProcess[processo.pid];
+        if(processo.state != 'Abortado'){
+            if((bloco.usado + newSize) > bloco.size){
+                if((bloco.size - bloco.usado) > 0){
+                    var remaining = newSize - bloco.size;
+                    bloco.usado = bloco.size;
+                    bloco = mergeFit.split(processo,newSize - bloco.size,this.memory.blocks[0],0);
+                }else{
+                    bloco = mergeFit.split(processo,newSize,this.memory.blocks[0],0);
+                }
+                if(!bloco) processo.state = 'Abortado';
+            }
+
+            if(!bloco || processo.state == 'Abortado'){
+                debugger;
+                return false;
+            }
+            processo.memory += newSize;
+            // mergeFit.memory.size -= newSize;
+            alocado = false;
+        }
+
+        if(processo.state == 'Abortado'){
+            mergeFit.encerrarProcesso(processo,mergeFit.memory.blocks[0],0);
+        }
+
+        return processo.state != 'Abortado';
+    };
+
+    mergeFit.merge = function(processo,block,index,isSwap){
+        return (function(processo,block,index){
+            if(!block || (block && block.isVirtual)) return;
+            var next =  mergeFit.merge(processo,block.proximo,index + 1);
+
+
+            if(block.processo && processo && block.processo.pid == processo.pid){
+                block.processo = null;
+                block.name = 'DISPONIVEL';
+                mergeFit.memory.size += block.size;
+                block.usado = 0;
+                if(processo.blocks){
+                    processo.blocks.splice(processo.blocks.indexOf(block.id),1);
+                }
+            }
+
+            if(!block.processo && next && !next.processo && (!block.isVirtual && !next.isVirtual)){
+                /** merge **/
+                var mergeBlocks = mergeFit.memory.blocks.splice(index,2);
+                var merged = {
+                    id: blockCounter++,
+                    name: 'DISPONIVEL',
+                    processo: null,
+                    size: mergeBlocks[0].size + mergeBlocks[1].size,
+                    usado: 0,
+                    data: [mergeBlocks[0].size + mergeBlocks[1].size,0],
+                }
+                var previous = mergeFit.memory.blocks[index - 1];
+                indx = index - 1;
+                while(previous && previous.isVirtual){
+                    previous = mergeFit.memory.blocks[--indx]
+                }
+                if(previous){
+                    previous.proximo = merged;
+                }
+                // if(previous){
+                //   previous.proximo = merged;
+                // }
+                var proximo = mergeFit.memory.blocks[index];
+                idx = index;
+                while(proximo && proximo.isVirtual){
+                    proximo = mergeFit.memory.blocks[++idx];
+                }
+                merged.proximo = proximo;
+                // merged.proximo = mergeFit.memory.blocks[index];
+                mergeFit.memory.blocks.splice(index,0,merged);
+            }
+            return mergeFit.memory.blocks[index];
+        })(processo,block,index);
+    }
+
+    mergeFit.encerrarProcesso = function(processo,isSwap){
+        // if(!isSwap) this.memory.size += processo.memory;
+        this.merge(processo,this.memory.blocks[0],0,isSwap);
+    };
+
+    return mergeFit;
 });
