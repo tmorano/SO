@@ -4,9 +4,9 @@ sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
     var tamblock = 0;
     var lastBlockProcess = [];
 
-  /*
-   * Adiciona um processo ou aloca mais memória para ele
-   */
+    /*
+     * Adiciona um processo ou aloca mais memória para ele
+     */
     bestFit.add = function(processo,newSize){
         // pega o novo tamanho (se for só aumentar) ou o tamanho do novo processo
         var size = newSize || processo.memory;
