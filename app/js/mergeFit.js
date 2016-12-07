@@ -28,16 +28,13 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
       //   novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
       //   alocado = false;
       // }
-      if(processo.memory > mergeFit.memory.size){
-        debugger;
-      }
+
       novoBloco = mergeFit.split(processo,processo.memory,this.memory.blocks[0],0);
       alocado = false;
 
       /** não conseguiu alocar **/
       if(!novoBloco){
         processo.state = 'Abortado';
-        debugger;
         return;
       }
 
@@ -150,7 +147,7 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
           return false;
         }
         processo.memory += newSize;
-        mergeFit.memory.size -= newSize;
+        // mergeFit.memory.size -= newSize;
         alocado = false;
       }
 
@@ -171,10 +168,10 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
           block.processo = null;
           block.name = 'DISPONIVEL';
           mergeFit.memory.size += block.size;
-          if(block.usado != block.size){
-            debugger;
-          }
           block.usado = 0;
+          if(processo.blocks){
+            processo.blocks.splice(processo.blocks.indexOf(block.id),1);
+          }
         }
 
         if(!block.processo && next && !next.processo && (!block.isVirtual && !next.isVirtual)){

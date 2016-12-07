@@ -23,22 +23,25 @@ var virtualMemory = {};
           var threshold = Math.floor( (memoryService.memory.totalSize -  memoryService.memory.size) / memoryService.memory.totalSize * 100 );
           var needsSwap = Math.floor( (memoryService.memory.totalSize -  memoryService.memory.size - block.size) / memoryService.memory.totalSize * 100);
           if(threshold > 70){
-            debugger;
+            virtualMemory.swap(memoryService);
           }
-          if(needsSwap > 70){
-            debugger;
+          if(success){
+            if(!processo){
+              debugger;
+            }
+            var blockInMemory = memoryService.split(processo,block.size,memoryService.memory.blocks[0],0);
+            if(!blockInMemory){
+              processo.state = 'Abortado';
+              success = false;
+            }else{
+              processo.blocks.push(blockInMemory.id);
+            }
           }
-          var blockInMemory = memoryService.split(processo,block.size,memoryService.memory.blocks[0],0);
-          processo.blocks.splice(processo.blocks.indexOf(block.id),1);
           block.name = 'DISPONIVEL';
           block.processo = null;
           block.usado = 0;
-          if(!blockInMemory){
-            processo.state = 'Abortado';
-            success = false;
-            return true;
-          }
-          return false;
+          processo.blocks.splice(processo.blocks.indexOf(block.id),1);
+          return true;
         }
       });
       return success;
@@ -56,22 +59,23 @@ var virtualMemory = {};
     virtualMemory.swap = function (memoryService) {
       var stop = false;
       if((usage = virtualMemory.needsSwap(memoryService)) > 70){
+
         // Realizar o swap dos processos aguardando, iniciar pelo ultimo da fila de prioridades
         //Percorrer todas as filas de prioridade do round robin
-
-        memoryService.config.filaDePrioridade.forEach(function(fila){
+        // os ultimos da fila sao o reverse()
+        memoryService.config.filaDePrioridade.every(function(fila){
           fila.filter(function(processo){
             return processo.state == 'Aguardando';
           })
           .reverse().every(function(processo){
             var processBlocks = [],processBlocksIDs = [];
-
             processo.blocks.forEach(function(id){
               processBlocks = processBlocks.concat(memoryService.memory.blocks.filter(function(block){
                 return block.id == id;
               }))
             });
 
+            // percorre a lista de blocos do processo e verifica se ainda tem como enviar mais pro hd
             for(var i = 0;i < processBlocks.length;i++){
               if(processBlocks[i].isVirtual){
                 continue;
@@ -80,6 +84,7 @@ var virtualMemory = {};
                 // var block = processBlocks.splice(i,1)[0];
                 processo.blocks.splice(processo.blocks.indexOf(processBlocks[i].id),1);
                 var block = processBlocks[i];
+                // bloco que vai pro hd se não já tiver um para ele
                 var newBlock = angular.copy(block);
 
                 block.processo = null;
@@ -94,23 +99,28 @@ var virtualMemory = {};
                 delete newBlock.proximo;
 
                 memoryService.config.memory.size += block.size;
+                // tenta fazer o merge do bloco que liberou
                 memoryService.encerrarProcesso(null,true);
+                // aloca
                 virtualMemory.allocate(processo,newBlock,memoryService);
-
               }else{
                 stop = true;
                 break;
               }
             }
             if(processBlocksIDs.length > 0){
+              // atualiza a lista de blocos do processo
               processo.blocks = processo.blocks.concat(processBlocksIDs);
             }
             return !stop;
           });
+          // só continua se ainda der para fazer swap
+          return (usage = virtualMemory.needsSwap(memoryService)) <= 70;
         });
       }else{
+        // volta pro hd os blocos que foram enviado caso reduza o threhold
         if(virtualMemory.blocks.length == 0) return;
-        memoryService.config.filaDePrioridade.forEach(function(fila){
+        memoryService.config.filaDePrioridade.every(function(fila){
           fila.filter(function(processo){
             return processo.state == 'Abortado';
           })
@@ -137,6 +147,7 @@ var virtualMemory = {};
             }
             return !stop;
           })
+          return (usage = virtualMemory.needsSwap(memoryService)) <= 70;
         });
       }
     }
