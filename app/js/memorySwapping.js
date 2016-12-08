@@ -9,6 +9,10 @@ var virtualMemory = {};
       return Math.floor(((memoryService.memory.totalSize - (memory ? (memoryService.memory.size - memory) : memoryService.memory.size)) / memoryService.memory.totalSize) * 100);
     }
 
+    virtualMemory.maxThreshold = (memoryService)=>{
+      return Math.floor( (memoryService.memory.totalSize -  memoryService.memory.size) / memoryService.memory.totalSize * 100 ) > 70;
+    }
+
     virtualMemory.swapBack = function(memoryService,processo){
       var success = true;
       var blocks = this.blocks.filter(function(block){
@@ -56,104 +60,161 @@ var virtualMemory = {};
       return false;
     }
 
-    virtualMemory.swap = function (memoryService) {
-      var stop = false;
-      if((usage = virtualMemory.needsSwap(memoryService)) > 70){
-
-        // Realizar o swap dos processos aguardando, iniciar pelo ultimo da fila de prioridades
-        //Percorrer todas as filas de prioridade do round robin
-        // os ultimos da fila sao o reverse()
-        memoryService.config.filaDePrioridade.every(function(fila){
-          fila.filter(function(processo){
-            return processo.state == 'Aguardando';
-          })
-          .reverse().every(function(processo){
-            var processBlocks = [],processBlocksIDs = [];
-            processo.blocks.forEach(function(id){
-              processBlocks = processBlocks.concat(memoryService.memory.blocks.filter(function(block){
-                return block.id == id;
-              }))
-            });
-
-            // percorre a lista de blocos do processo e verifica se ainda tem como enviar mais pro hd
-            for(var i = 0;i < processBlocks.length;i++){
-              if(processBlocks[i].isVirtual){
-                continue;
-              }
-              if((usage = virtualMemory.needsSwap(memoryService)) > 70){
-                // var block = processBlocks.splice(i,1)[0];
-                processo.blocks.splice(processo.blocks.indexOf(processBlocks[i].id),1);
-                var block = processBlocks[i];
-                // bloco que vai pro hd se não já tiver um para ele
-                var newBlock = angular.copy(block);
-
-                block.processo = null;
-                block.name = 'DISPONIVEL';
-                block.usado = 0;
-
-                newBlock.id = btoa(newBlock.id);
-                newBlock.processo = processo;
-                newBlock.isVirtual = true;
-                newBlock.data = newBlock.data.reverse();
-                processBlocksIDs.push(newBlock.id);
-                delete newBlock.proximo;
-
-                memoryService.config.memory.size += block.size;
-                // tenta fazer o merge do bloco que liberou
-                memoryService.encerrarProcesso(null,true);
-                // aloca
-                virtualMemory.allocate(processo,newBlock,memoryService);
-              }else{
-                stop = true;
-                break;
-              }
-            }
-            if(processBlocksIDs.length > 0){
-              // atualiza a lista de blocos do processo
-              processo.blocks = processo.blocks.concat(processBlocksIDs);
-            }
-            return !stop;
-          });
-          // só continua se ainda der para fazer swap
-          return (usage = virtualMemory.needsSwap(memoryService)) <= 70;
-        });
+    virtualMemory.swap = (memoryService,,filaAtual,needsSwap) => {
+      if(needsSwap){
+        virtualMemory.sendToStorage(memoryService,filaAtual);
       }else{
-        // volta pro hd os blocos que foram enviado caso reduza o threhold
-        if(virtualMemory.blocks.length == 0) return;
-        memoryService.config.filaDePrioridade.every(function(fila){
-          fila.filter(function(processo){
-            return processo.state == 'Abortado';
-          })
-          .every(function(processo){
-            var processBlocks = [];
-            if(!processo.blocks){
-              debugger;
-            }
-            processo.blocks.forEach(function(id){
-              processBlocks = processBlocks.concat(virtualMemory.blocks.filter(function(block){
-                return block.id == id;
-              }));
-            });
-
-            if(memoryService.split){
-              for(var i = 0;i < processBlocks.length; i++){
-                if((usage = virtualMemory.needsSwap()) <= 70){
-                  memoryService.split(processo,processBlocks[i].size,memoryService.memory.blocks[0],0);
-                  processBlocks[i].name = 'DISPONIVEL';
-                  processBlocks[i].usado = 0;
-                  processBlocks[i].processo = null;
-                }else{
-                  stop = true;
-                  break;
-                }
-              }
-            }
-            return !stop;
-          })
-          return (usage = virtualMemory.needsSwap(memoryService)) <= 70;
-        });
+        virtualMemory.retrieveFromStorage(memoryService,filaAtual);
       }
     }
+
+    virtualMemory.sendToStorage = (memoryService, filaAtual) => {
+      var stop = false;
+      var filaAtual = memoryService.config.filaDePrioridade[filaAtual];
+      var __ = (processo) => {
+        var processBlocks = processo.blocks.sort(function(bA,bB){
+          return bB.size - bA.size;
+        });
+        for(var i = 0;i < processBlocks.length; i++){
+          if(processBlocks[i].isVirtual) continue;
+          if(virtualMemory.maxThreshold()){
+            var newBlock = angular.copy(processBlocks[i]);
+            processBlocks[i].name = 'DISPONIVEL';
+            processBlocks[i].processo = null;
+            processBlocks[i].usado = 0;
+            newBlock.id = btoa(newBlock.id);
+            newBlock.processo = processo;
+            newBlock.data = newBlock.data.reverse();
+            delete newBlock.proximo;
+            processo.blocks.splice(processo.blocks.indexOf(processBlocks[i].id),1);
+            processo.blocks.push(newBlock.id);
+            memoryService.encerrarProcesso(null,true);
+            memoryService.memory.size += newBlock.size;
+          }else{
+            break;
+          }
+        }
+        return virtualMemory.maxThreshold();
+      };
+
+      filaAtual.filter(function(processo){
+        return processo.state == 'Aguardando';
+      }).reverse()
+      .every(function(processo){
+        return __(processo);
+      });
+
+      if(virtualMemory.maxThreshold()){
+        for(var i = 0;i < memoryService.config.filaDePrioridade.length;i++){
+          if(filaDePrioridade == i) continue;
+          memoryService.config.filaDePrioridade[i].filter(function(processo){
+            return processo.state == 'Aguardando';
+          }).reverse()
+          .every(function(processo){
+            return __(processo);
+          });
+        }
+      }
+    };
+
+    // virtualMemory.swap = function (memoryService) {
+    //   var stop = false;
+    //   if((usage = virtualMemory.needsSwap(memoryService)) > 70){
+    //
+    //     // Realizar o swap dos processos aguardando, iniciar pelo ultimo da fila de prioridades
+    //     //Percorrer todas as filas de prioridade do round robin
+    //     // os ultimos da fila sao o reverse()
+    //     memoryService.config.filaDePrioridade.every(function(fila){
+    //       fila.filter(function(processo){
+    //         return processo.state == 'Aguardando';
+    //       })
+    //       .reverse().every(function(processo){
+    //         var processBlocks = [],processBlocksIDs = [];
+    //         processo.blocks.forEach(function(id){
+    //           processBlocks = processBlocks.concat(memoryService.memory.blocks.filter(function(block){
+    //             return block.id == id;
+    //           }))
+    //         });
+    //
+    //         // percorre a lista de blocos do processo e verifica se ainda tem como enviar mais pro hd
+    //         for(var i = 0;i < processBlocks.length;i++){
+    //           if(processBlocks[i].isVirtual){
+    //             continue;
+    //           }
+    //           if((usage = virtualMemory.needsSwap(memoryService)) > 70){
+    //             // var block = processBlocks.splice(i,1)[0];
+    //             processo.blocks.splice(processo.blocks.indexOf(processBlocks[i].id),1);
+    //             var block = processBlocks[i];
+    //             // bloco que vai pro hd se não já tiver um para ele
+    //             var newBlock = angular.copy(block);
+    //
+    //             block.processo = null;
+    //             block.name = 'DISPONIVEL';
+    //             block.usado = 0;
+    //
+    //             newBlock.id = btoa(newBlock.id);
+    //             newBlock.processo = processo;
+    //             newBlock.isVirtual = true;
+    //             newBlock.data = newBlock.data.reverse();
+    //             processBlocksIDs.push(newBlock.id);
+    //             delete newBlock.proximo;
+    //
+    //             memoryService.config.memory.size += block.size;
+    //             // tenta fazer o merge do bloco que liberou
+    //             memoryService.encerrarProcesso(null,true);
+    //             // aloca
+    //             virtualMemory.allocate(processo,newBlock,memoryService);
+    //           }else{
+    //             stop = true;
+    //             break;
+    //           }
+    //         }
+    //         if(processBlocksIDs.length > 0){
+    //           // atualiza a lista de blocos do processo
+    //           processo.blocks = processo.blocks.concat(processBlocksIDs);
+    //         }
+    //         return !stop;
+    //       });
+    //       // só continua se ainda der para fazer swap
+    //       return (usage = virtualMemory.needsSwap(memoryService)) <= 70;
+    //     });
+    //   }else{
+    //     // volta pro hd os blocos que foram enviado caso reduza o threhold
+    //     if(virtualMemory.blocks.length == 0) return;
+    //     memoryService.config.filaDePrioridade.every(function(fila){
+    //       fila.filter(function(processo){
+    //         return processo.state == 'Abortado';
+    //       })
+    //       .every(function(processo){
+    //         var processBlocks = [];
+    //         if(!processo.blocks){
+    //           debugger;
+    //         }
+    //         processo.blocks.forEach(function(id){
+    //           processBlocks = processBlocks.concat(virtualMemory.blocks.filter(function(block){
+    //             return block.id == id;
+    //           }));
+    //         });
+    //
+    //         if(memoryService.split){
+    //           for(var i = 0;i < processBlocks.length; i++){
+    //             if((usage = virtualMemory.needsSwap()) <= 70){
+    //               memoryService.split(processo,processBlocks[i].size,memoryService.memory.blocks[0],0);
+    //               processBlocks[i].name = 'DISPONIVEL';
+    //               processBlocks[i].usado = 0;
+    //               processBlocks[i].processo = null;
+    //             }else{
+    //               stop = true;
+    //               break;
+    //             }
+    //           }
+    //         }
+    //         return !stop;
+    //       })
+    //       return (usage = virtualMemory.needsSwap(memoryService)) <= 70;
+    //     });
+    //   }
+    // }
 
     virtualMemory.allocate = function(processo,block,memoryService){
       /**Com o processo encontrado vamos adicionar no HD utilizando o bestfit **/

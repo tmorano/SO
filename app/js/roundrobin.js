@@ -73,6 +73,10 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
             if (currentProcessor) {
                 var core = config.cores[currentProcessor.id];
 
+                var needsSwap = memorySwapping.maxThreshold(memoryService);
+
+                memorySwapping.swap(memoryService,roundrobin.ultimaFilaProcessada,needsSwap);
+
                 //
                 memorySwapping.swap(memoryService);
                 if(memorySwapping.hasSwapped(processo)){
@@ -80,6 +84,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                     return;
                   };
                 }
+
                 // Adiciona na memoria
                 memoryService.adicionarNaMemoria(processo);
 
@@ -110,7 +115,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                     core.tempo--;
                                 }
 
-                                if(processo.chance()){
+                                if(processo.chance() && false){
                                   memoryService.aumentarMemoria(processo,memorySwapping);
                                   if(processo.state == 'Abortado'){
                                     return;

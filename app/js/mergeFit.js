@@ -34,6 +34,8 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
 
       /** não conseguiu alocar **/
       if(!novoBloco){
+        debugger;
+        var threshold = Math.floor( (this.memory.totalSize -  this.memory.size) / this.memory.totalSize * 100 );
         processo.state = 'Abortado';
         return;
       }
@@ -51,9 +53,6 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
         }
 
         if(!current.processo && !current.isVirtual && current.size == memory){
-          if(current.size < memory){
-            debugger;
-          }
           if(!processo.blocks){
             processo.blocks = [];
           }
@@ -129,7 +128,6 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
     mergeFit.aumentarMemoria = function(processo,memorySwapping){
       var newSize = MemoryHelper.random(2,32);
       if(newSize > mergeFit.memory.size){
-        debugger;
       }
       memorySwapping.swap(this);
 
@@ -148,7 +146,6 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
         }
 
         if(!bloco || processo.state == 'Abortado'){
-          debugger;
           return false;
         }
         processo.memory += newSize;
