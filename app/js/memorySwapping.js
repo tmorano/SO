@@ -64,24 +64,57 @@ var virtualMemory = {};
       if(needsSwap){
         virtualMemory.sendToStorage(memoryService);
       }else if(virtualMemory.blocks.length > 0){
-        virtualMemory.retrieveFromStorage(memoryService,filaAtual);
+        virtualMemory.retrieveFromStorage(memoryService);
       }
+    }
+
+    virtualMemory.retrieveFromStorage = (memoryService) => {
+      memoryService.config.aptos.filter(function(processo){
+        return processo.state == 'Executando';
+      })
+      .every(function(processo){
+        var blocks = virtualMemory.blocks.filter(function(block){
+          return block.processo && block.processo.pid == processo.pid;
+        })
+
+        for(var i = 0;i < blocks.length; i++){
+          if(!virtualMemory.maxThreshold(memoryService)){
+            blocks[i].name = 'DISPONIVEL';
+            blocks[i].usado = 0;
+            blocks[i].processo = null;
+            processo.blocks.splice(processo.blocks.indexOf(blocks[i].id),1);
+            if(memoryService.split){
+              memoryService.split(processo,blocks[i].size,memoryService.memory.blocks[0],0);
+            }
+          }else{
+            break;
+          }
+        }
+        return !virtualMemory.maxThreshold(memoryService);
+      });
     }
 
     virtualMemory.sendToStorage = (memoryService) => {
       var stop = false;
       var __ = (processo) => {
-        var processBlocks = processo.blocks.sort(function(bA,bB){
-          return bB.size - bA.size;
-        });
+        // var processBlocks = processo.blocks.sort(function(bA,bB){
+        //   return bB.size - bA.size;
+        // });
+        var processBlocks = [];
+        processo.blocks.forEach(function(id){
+          processBlocks.push(memoryService.memory.blocks.find(function(block){
+              return block.id == id;
+          }))
+        })
         for(var i = 0;i < processBlocks.length; i++){
           if(processBlocks[i].isVirtual) continue;
-          if(virtualMemory.maxThreshold()){
+          if(virtualMemory.maxThreshold(memoryService)){
             var newBlock = angular.copy(processBlocks[i]);
             processBlocks[i].name = 'DISPONIVEL';
             processBlocks[i].processo = null;
             processBlocks[i].usado = 0;
             newBlock.id = btoa(newBlock.id);
+            newBlock.isVirtual = true;
             newBlock.processo = processo;
             newBlock.data = newBlock.data.reverse();
             delete newBlock.proximo;
@@ -89,32 +122,38 @@ var virtualMemory = {};
             processo.blocks.push(newBlock.id);
             memoryService.encerrarProcesso(null,true);
             memoryService.memory.size += newBlock.size;
+            virtualMemory.allocate(processo,newBlock,memoryService);
           }else{
             break;
           }
         }
-        return virtualMemory.maxThreshold();
+        return virtualMemory.maxThreshold(memoryService);
       };
 
       var aptosLast = [],stop = false,_continue = true;
+      memoryService.config.aptos.filter(function(processo){
+        return processo.state == 'Aguardando';
+      }).reverse().every(function(processo){
+        return __(processo);
+      });
 
-      while(_continue){
-        var j = 3;
-        for(var i =  memoryService.config.filaDePrioridade.length - 1;i >= 0;i--){
-          aptosLast.push(memoryService.config.filaDePrioridade[i][memoryService.config.filaDePrioridade[j].length - 1])
-        }
-        _continue = !((teste = aptosLast.filter(function(processo){
-          return processo && processo.state == 'Aguardando';
-        })
-        .sort(function(a,b){
-          return b.size - a.size;
-        }))
-        .every(function(processo){
-          return __(processo);
-        }));
-        aptosLast = [];
-        j--;
-      }
+      // while(_continue){
+      //   var j = 3;
+      //   for(var i =  memoryService.config.filaDePrioridade.length - 1;i >= 0;i--){
+      //     aptosLast.push(memoryService.config.filaDePrioridade[i][memoryService.config.filaDePrioridade[j].length - 1])
+      //   }
+      //   _continue = !((teste = aptosLast.filter(function(processo){
+      //     return processo && processo.state == 'Aguardando';
+      //   })
+      //   .sort(function(a,b){
+      //     return b.size - a.size;
+      //   }))
+      //   .every(function(processo){
+      //     return __(processo);
+      //   }));
+      //   aptosLast = [];
+      //   j--;
+      // }
       // if(virtualMemory.maxThreshold()){
       //   for(var i = 0;i < memoryService.config.filaDePrioridade.length;i++){
       //     if(filaDePrioridade == i) continue;

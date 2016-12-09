@@ -4,8 +4,12 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
     var blockCounter = 0;
     var alocado = false;
 
-    mergeFit.adicionarNaMemoria = function (processo) {
+    mergeFit.adicionarNaMemoria = function (processo,memorySwapping) {
       if(processo.state != 'Pronto' || processo.state == 'Abortado') return;
+
+      if(memorySwapping.maxThreshold(this)){
+        memorySwapping.sendToStorage(this);
+      }
 
       if(this.memory.blocks.length == 0){
         mergeFit.memory.blocks.push({

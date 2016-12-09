@@ -17,7 +17,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
 
         config.filaDePrioridade = roundrobin.filaDePrioridade;
 
-
+        config.aptos = roundrobin.aptos;
     };
     roundrobin.aptos = [];
 
@@ -90,20 +90,13 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                 if (core.interval == false) {
                     core.interval = $interval(function () {
 
-                      var needsSwap = memorySwapping.maxThreshold(memoryService);
-                      if(needsSwap){
-                        debugger;
-                      }
-
                       if(roundrobin.aptos.indexOf(processo) < 0 && processo.state != 'Concluido' && processo.state != 'Abortado'){
                         console.log(processo)
                         roundrobin.aptos.unshift(processo);
                       }
 
-                      //memorySwapping.swap(memoryService,needsSwap);
-
                       // Adiciona na memoria
-                      memoryService.adicionarNaMemoria(processo);
+                      memoryService.adicionarNaMemoria(processo,memorySwapping);
 
                         if(processo.state == 'Abortado'){
                             $interval.cancel(core.interval);
@@ -125,9 +118,13 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                 }
 
                                 if(processo.state == 'Aguardando'){
+                                  roundrobin.aptos.splice(roundrobin.aptos.indexOf(processo),1);
                                   roundrobin.aptos.unshift(processo);
                                 }
-
+                                processo.state = 'Executando';
+                                processo.progressStyle = 'default';
+                                processo.tempoExecutado += 1;
+                                processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
 
                                 if(processo.chance() && false){
                                   memoryService.aumentarMemoria(processo,memorySwapping);
@@ -136,10 +133,6 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                   }
                                 }
 
-                                processo.state = 'Executando';
-                                processo.progressStyle = 'default';
-                                processo.tempoExecutado += 1;
-                                processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
                             } else if (core.tempo == 0 && processo.tempoExecutado < processo.tempoTotal) {
                                 console.log('processo ', processo.pid,' está aguardando')
                                 $interval.cancel(core.interval);
@@ -165,7 +158,8 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                 roundrobin.aptos.splice(roundrobin.aptos.indexOf(processo),1);
                             }
                         }
-
+                        var needsSwap = memorySwapping.maxThreshold(memoryService);
+                        memorySwapping.swap(memoryService,needsSwap);
                     }, 1000);
                 }
             }
