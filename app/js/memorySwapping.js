@@ -60,17 +60,16 @@ var virtualMemory = {};
       return false;
     }
 
-    virtualMemory.swap = (memoryService,,filaAtual,needsSwap) => {
+    virtualMemory.swap = (memoryService,needsSwap) => {
       if(needsSwap){
-        virtualMemory.sendToStorage(memoryService,filaAtual);
-      }else{
+        virtualMemory.sendToStorage(memoryService);
+      }else if(virtualMemory.blocks.length > 0){
         virtualMemory.retrieveFromStorage(memoryService,filaAtual);
       }
     }
 
-    virtualMemory.sendToStorage = (memoryService, filaAtual) => {
+    virtualMemory.sendToStorage = (memoryService) => {
       var stop = false;
-      var filaAtual = memoryService.config.filaDePrioridade[filaAtual];
       var __ = (processo) => {
         var processBlocks = processo.blocks.sort(function(bA,bB){
           return bB.size - bA.size;
@@ -97,24 +96,36 @@ var virtualMemory = {};
         return virtualMemory.maxThreshold();
       };
 
-      filaAtual.filter(function(processo){
-        return processo.state == 'Aguardando';
-      }).reverse()
-      .every(function(processo){
-        return __(processo);
-      });
+      var aptosLast = [],stop = false,_continue = true;
 
-      if(virtualMemory.maxThreshold()){
-        for(var i = 0;i < memoryService.config.filaDePrioridade.length;i++){
-          if(filaDePrioridade == i) continue;
-          memoryService.config.filaDePrioridade[i].filter(function(processo){
-            return processo.state == 'Aguardando';
-          }).reverse()
-          .every(function(processo){
-            return __(processo);
-          });
+      while(_continue){
+        var j = 3;
+        for(var i =  memoryService.config.filaDePrioridade.length - 1;i >= 0;i--){
+          aptosLast.push(memoryService.config.filaDePrioridade[i][memoryService.config.filaDePrioridade[j].length - 1])
         }
+        _continue = !((teste = aptosLast.filter(function(processo){
+          return processo && processo.state == 'Aguardando';
+        })
+        .sort(function(a,b){
+          return b.size - a.size;
+        }))
+        .every(function(processo){
+          return __(processo);
+        }));
+        aptosLast = [];
+        j--;
       }
+      // if(virtualMemory.maxThreshold()){
+      //   for(var i = 0;i < memoryService.config.filaDePrioridade.length;i++){
+      //     if(filaDePrioridade == i) continue;
+      //     memoryService.config.filaDePrioridade[i].filter(function(processo){
+      //       return processo.state == 'Aguardando';
+      //     }).reverse()
+      //     .every(function(processo){
+      //       return __(processo);
+      //     });
+      //   }
+      // }
     };
 
     // virtualMemory.swap = function (memoryService) {
