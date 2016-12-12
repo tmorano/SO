@@ -1,123 +1,179 @@
-sistemasOperacionais.factory('BestFitService', function (MemoryHelper) {
-    var bestFit = {};
-    var sortedBlocks = [];
-    var tamblock = 0;
-    var lastBlockProcess = [];
+sistemasOperacionais.factory('BestFitService', function(MemoryHelper){
+  var bestFit = {};
+  var blockCount = 0;
+  var totalMemoryBlock = 0;
+  var lastBlockProcess = [];
 
-    /*
-    * Adiciona um processo ou aloca mais memória para ele
-    */
-    bestFit.add = function(processo,newSize){
-      // pega o novo tamanho (se for só aumentar) ou o tamanho do novo processo
-      var size = newSize || processo.memory;
+  var sortedBlocks = [];
 
-      /** ordena para conseguir o melhor bloco **/
-      sortedBlocks.sort(function(blockA,blockB){ return blockB.size - blockA.size; });
-      var bestFitBlock;
-      for(var i = 0;i < sortedBlocks.length; i++){
-        if(!sortedBlocks[i].processo && sortedBlocks[i].size >= size){
-          bestFitBlock = sortedBlocks[i];
-        }
+  bestFit.add = function(processo,size,expand){
+    var bestFitBlock = null;
+    var memory = size || processo.memory;
+
+    sortedBlocks.sort(function(a,b){
+      return a.size - b.size;
+    });
+
+    for(var i = 0;i < sortedBlocks.length;i++){
+      if(sortedBlocks[i].size >= memory && !sortedBlocks[i].processo){
+        bestFitBlock = sortedBlocks[i];
+        break;
       }
-
-      /** não encontrou um bloco **/
-      if(!bestFitBlock){
-
-        /** caso o tamanho ultrapasse os limites da memória e não foi possível encontrar um bloco apropriado **/
-        if((tamblock + size) > this.memory.totalSize){
-          processo.state = 'Abortado';
-          return;
-        }
-        var block = {
-          id: this.memory.blocks.length,
-          processo: processo,
-          size: size,
-          data: [size,0],
-          name: 'Processo ' + processo.pid,
-          usado: size,
-        };
-        /** incrementa a quantidade total de blocos criados **/
-        tamblock += size;
-        bestFit.memory.blocks.push(block);
-        bestFitBlock = block;
-        /** lista auxiliar de blocos ordenados pelo tamanho **/
-        sortedBlocks.push(block);
-      }else{
-        /** se encontrou um bloco aloca ele **/
-        bestFitBlock.name = 'Processo ' + processo.pid;
-        bestFitBlock.processo = processo;
-        bestFitBlock.usado = size < bestFitBlock.size ? size : bestFitBlock.size;
-      }
-
-      /** ultimo bloco desse processo **/
-      lastBlockProcess[processo.pid] = bestFitBlock;
-      /** decrementa do tamanho total o novo tamanho (pediu mais memória) ou o tamanho
-       do novo processo. Quando newSize <> undefined é uma requisição por mais memória.
-      **/
-      bestFit.memory.size -= size;
     }
 
-    bestFit.adicionarNaMemoria = function (processo) {
-      if(bestFit.config.arrayOfProcessMemory.series.length == 0){
-        bestFit.config.arrayOfProcessMemory.series = bestFit.memory.blocks;
-      }
-      if(processo.state != 'Pronto' && !processo.isSwapped) return;
-
-      if(processo.memory > bestFit.memory.size){
-        processo.state = 'Abortado';
-        return;
-      }
-      bestFit.add(processo);
-    };
-
-    bestFit.aumentarMemoria = function(processo){
-      var newSize = MemoryHelper.random(2,32);
-
-      if(newSize > bestFit.memory.size){
-        processo.state = 'Abortado';
+    if(!bestFitBlock){
+      if((totalMemoryBlock + memory) > bestFit.memory.totalSize){
+        console.log('nao achou espaco pra alocar ',processo.pid)
+        return null;
       }
 
-      var bloco = lastBlockProcess[processo.pid];
-      if(processo.state != 'Abortado'){
-        if((bloco.usado + newSize) > bloco.size){
-          if((bloco.size - bloco.usado) > 0){
-            var remaining = newSize - bloco.size;
-            bloco.usado = bloco.size;
-            bestFit.add(processo,newSize - bloco.usado);
-          }else{
-            bestFit.add(processo,newSize);
+      var block = {
+        id: ++blockCount,
+        processo: processo,
+        size: memory,
+        data: [memory,0],
+        usado: memory,
+        name: 'Processo ' + processo.pid
+      };
+      bestFitBlock = block;
+      totalMemoryBlock += memory;
+      sortedBlocks.push(bestFitBlock);
+      bestFit.memory.blocks.push(bestFitBlock);
+    }else{
+      bestFitBlock.processo = processo;
+      bestFitBlock.name = 'Processo ' + processo.pid;
+      if(memory > bestFitBlock.size){
+        //debugger;
+      }
+      bestFitBlock.usado = memory;
+    }
+    lastBlockProcess[processo.pid] = bestFitBlock;
+    bestFit.memory.size -= bestFitBlock.usado;
+    if(expand){
+      if(expand > bestFit.memory.size){
+        //debugger;
+      }
+      bestFit.memory.size -= expand;
+    }
+    return bestFitBlock;
+  }
+
+  bestFit.adicionarNaMemoria = function(processo){
+    if(processo.state != 'Pronto') return;
+    if(bestFit.memory.blocks.length == 0){
+      bestFit.config.arrayOfProcessMemory.series = bestFit.memory.blocks;
+    }
+    if(processo.memory > bestFit.memory.totalSize){
+      processo.state = 'Abortado';
+      //debugger;
+      return false;
+    }
+    if(processo.memory > bestFit.memory.size){
+      // //debugger;
+    }
+
+    var block = bestFit.add(processo);
+
+    if(!block){
+      // //debugger;
+      processo.state = 'Abortado';
+      return false;
+    }
+
+    return true;
+  }
+
+  bestFit.encerrarProcesso = function(processo){
+    for(var i = 0;i < bestFit.memory.blocks.length;i++){
+      if(bestFit.memory.blocks[i].processo &&
+        bestFit.memory.blocks[i].processo.pid == processo.pid){
+          if(bestFit.memory.blocks[i].usado > bestFit.memory.blocks[i].size){
+            //debugger;
           }
+          bestFit.memory.blocks[i].processo = null;
+          bestFit.memory.blocks[i].name = 'DISPONIVEL';
+          bestFit.memory.size += bestFit.memory.blocks[i].usado;
+          bestFit.memory.blocks[i].usado = 0;
+        }
+    }
+  }
+
+  bestFit.aumentarMemoria = function(processo){
+    var lastBlock = lastBlockProcess[processo.pid];
+    var size = MemoryHelper.random(2,32);
+    var block;
+
+    // 58
+    // 28
+    // 32
+    if((size + lastBlock.usado) > lastBlock.size){
+      if(size > bestFit.memory.size){
+        //debugger;
+      }
+      var remaining = lastBlock.size - (lastBlock.usado + size);
+      if(remaining < 0 && Math.abs(remaining) != size){
+        if((size + remaining) < 0){
+          //debugger;
         }else{
-          /** ainda pode expandir dentro do bloco **/
-          bloco.usado += newSize;
+          //debugger;
         }
-      }
-
-      /** se abortou por que não conseguiu alocar ou encaixar em um bloco **/
-      if(processo.state == 'Abortado'){
-        bestFit.encerrarProcesso(processo);
+        block = bestFit.add(processo,Math.abs(remaining),size + remaining);
+        if(block){
+          lastBlock.usado = lastBlock.size;
+          //debugger;
+        }
+      }else if(Math.abs(remaining) == size){
+        block = bestFit.add(processo,size);
       }else{
-        processo.memory += newSize;
-        bestFit.memory.size -= newSize;
+        //debugger;
       }
-
-      return processo.state != 'Abortado';
-    };
-
-    bestFit.encerrarProcesso = function(processo){
-      MemoryHelper.encerrarProcesso(processo,this);
-      var livre = true;
-      for(var i = 0;i < bestFit.memory.blocks.length;i++){
-        if(bestFit.memory.blocks[i].processo){
-          livre = false;
-          break;
-        }
+    }else{
+      if(size > bestFit.memory.size){
+        //debugger;
       }
-      // TODO: fix this
-      if(livre && bestFit.memory.size != this.memory.totalSize){
-         bestFit.memory.size = this.memory.totalSize;
-      }
-    };
+      lastBlock.usado += size;
+      bestFit.memory.size -= size;
+      block = lastBlock;
+    }
+    if(!block || processo.state == 'Abortado'){
+      processo.state = 'Abortado';
+      bestFit.encerrarProcesso(processo);
+      return false;
+    }else{
+      processo.memory += size;
+    }
+    // var oldSize = 0;
+    // var block = null;
+    // oldSize = lastBlock.usado;
+    //
+    //
+    // lastBlock.usado += size;
+    //
+    // var remaining = lastBlock.size - lastBlock.usado;
+    // if(remaining >= 0){
+    //   if(size > bestFit.memory.size){
+    //     //debugger;
+    //   }
+    //   block = lastBlock;
+    //   bestFit.memory.size -= size;
+    // }else if(remaining < 0){
+    //   remaining *= -1;
+    //   lastBlock.usado = lastBlock.size;
+    //   block = bestFit.add(processo,remaining);
+    // }
+    //
+    // if(!block){
+    //   processo.state = 'Abortado';
+    //   lastBlock.usado = oldSize;
+    //   bestFit.encerrarProcesso(processo);
+    //   return false;
+    // }else{
+    //   processo.memory += size;
+    // }
+    // return true;
 
-    return bestFit;
-});
+
+  }
+
+  return bestFit;
+})

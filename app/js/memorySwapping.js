@@ -105,7 +105,10 @@ var virtualMemory = {};
           processBlocks.push(memoryService.memory.blocks.find(function(block){
               return block.id == id;
           }))
-        })
+        });
+        processBlocks.sort(function(a,b){
+          return b.size - a.size;
+        });
         for(var i = 0;i < processBlocks.length; i++){
           if(processBlocks[i].isVirtual) continue;
           if(virtualMemory.maxThreshold(memoryService)){

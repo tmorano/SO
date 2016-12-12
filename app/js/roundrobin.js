@@ -126,7 +126,7 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                 processo.tempoExecutado += 1;
                                 processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
 
-                                if(processo.chance() && false){
+                                if(processo.chance()){
                                   memoryService.aumentarMemoria(processo,memorySwapping);
                                   if(processo.state == 'Abortado'){
                                     return;
@@ -158,8 +158,8 @@ sistemasOperacionais.factory('RoundRobinAlgorithmService', function ($interval) 
                                 roundrobin.aptos.splice(roundrobin.aptos.indexOf(processo),1);
                             }
                         }
-                        var needsSwap = memorySwapping.maxThreshold(memoryService);
-                        memorySwapping.swap(memoryService,needsSwap);
+                        // var needsSwap = memorySwapping.maxThreshold(memoryService);
+                        // memorySwapping.swap(memoryService,needsSwap);
                     }, 1000);
                 }
             }

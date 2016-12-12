@@ -130,38 +130,53 @@ sistemasOperacionais.factory('MergeFitService', function (MemoryHelper,$interval
 
     var lastBlockProcess = [];
     mergeFit.aumentarMemoria = function(processo,memorySwapping){
-      var newSize = MemoryHelper.random(2,32);
-      if(newSize > mergeFit.memory.size){
-      }
-      memorySwapping.swap(this);
-
-      /** recupera o ultimo bloco alocado **/
-      var bloco = lastBlockProcess[processo.pid];
-      if(processo.state != 'Abortado'){
-        if((bloco.usado + newSize) > bloco.size){
-          if((bloco.size - bloco.usado) > 0){
-            var remaining = newSize - bloco.size;
-            bloco.usado = bloco.size;
-            bloco = mergeFit.split(processo,newSize - bloco.size,this.memory.blocks[0],0);
-          }else{
-            bloco = mergeFit.split(processo,newSize,this.memory.blocks[0],0);
-          }
-          if(!bloco) processo.state = 'Abortado';
-        }
-
-        if(!bloco || processo.state == 'Abortado'){
-          return false;
-        }
-        processo.memory += newSize;
-        // mergeFit.memory.size -= newSize;
-        alocado = false;
+      var size = MemoryHelper.random(2,32);
+      if(memorySwapping.maxThreshold(this)){
+        debugger;
+        memorySwapping.sendToStorage(this);
       }
 
-      if(processo.state == 'Abortado'){
+      var block = mergeFit.split(processo,size,this.memory.blocks[0],0);
+      if(!block){
+        processo.state = 'Abortado';
         mergeFit.encerrarProcesso(processo,mergeFit.memory.blocks[0],0);
+        debugger;
+      }else{
+        processo.memory += size;
       }
-
       return processo.state != 'Abortado';
+      // var newSize = MemoryHelper.random(2,32);
+      // if(newSize > mergeFit.memory.size){
+      // }
+      // memorySwapping.swap(this);
+      //
+      // /** recupera o ultimo bloco alocado **/
+      // var bloco = lastBlockProcess[processo.pid];
+      // if(processo.state != 'Abortado'){
+      //   if((bloco.usado + newSize) > bloco.size){
+      //     if((bloco.size - bloco.usado) > 0){
+      //       var remaining = newSize - bloco.size;
+      //       bloco.usado = bloco.size;
+      //       bloco = mergeFit.split(processo,newSize - bloco.size,this.memory.blocks[0],0);
+      //     }else{
+      //       bloco = mergeFit.split(processo,newSize,this.memory.blocks[0],0);
+      //     }
+      //     if(!bloco) processo.state = 'Abortado';
+      //   }
+      //
+      //   if(!bloco || processo.state == 'Abortado'){
+      //     return false;
+      //   }
+      //   processo.memory += newSize;
+      //   // mergeFit.memory.size -= newSize;
+      //   alocado = false;
+      // }
+      //
+      // if(processo.state == 'Abortado'){
+      //   mergeFit.encerrarProcesso(processo,mergeFit.memory.blocks[0],0);
+      // }
+      //
+      // return processo.state != 'Abortado';
     };
 
     mergeFit.merge = function(processo,block,index,isSwap){

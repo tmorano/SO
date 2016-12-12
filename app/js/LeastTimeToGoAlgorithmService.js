@@ -3,6 +3,10 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
 
     ltg.coresLiberados = [];
 
+    ltg.processos = [];
+
+    ltg.aptos = [];
+
     ltg.configurar = function(config){
         //Inclui fila de prioridade ordenado pelo deadLine
         ltg.filaDePrioridade = [];
@@ -29,13 +33,20 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
 
         //Adiciona na fila de prioridades
         ltg.filaDePrioridade.push(proc);
-        insertionSort(ltg.filaDePrioridade)
+        //insertionSort(ltg.filaDePrioridade)
+        ltg.filaDePrioridade.sort(function(a,b){
+          return a.deadLine - b.deadLine;
+        });
+
+        ltg.processos.push(proc);
 
         scopeProccesses.push(proc);
     }
 
 
     ltg.executar = function(){
+
+
         var func = $interval(function () {
             // Verifica se o algoritmo esta rodando
             if (!ltg.config.running) {
@@ -43,15 +54,45 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                 return;
             }
             execLTG(ltg.config)
-        }, -1);
+        },-1);
+
+        var execProc = $interval(function(){
+          if(!ltg.config.running){
+            $interval.cancel(func);
+            return;
+          }
+          ltg.processos.forEach(function(processo){
+            // if(processo.state != 'Executando' && processo.deadLine == 0){
+            //   processo.state = 'Abortado';
+            //   processo.progressStyle = 'danger';
+            //   processo.progress = 100;
+            // }
+            if(processo.deadLine == 0){
+              processo.state = 'Abortado';
+              processo.progressStyle = 'danger';
+              processo.progress = 100;
+            }else if(processo.state == 'Pronto'){
+              processo.deadLine -= 1;
+            }
+          });
+        },1000)
     }
 
     var execLTG = function(config){
-
         var processo = buscarProximoProcesso();
 
         if (processo) {
             var currentProcessor = ltg.coresLiberados.shift();
+
+            // ltg.filaDePrioridade.forEach(function (eachProcesso) {
+            //     if(eachProcesso.state != 'Executando' && eachProcesso.deadLine == 0){
+            //         eachProcesso.state = 'Abortado';
+            //         eachProcesso.progressStyle = 'danger';
+            //         eachProcesso.progress = 100;
+            //     }else{
+            //         eachProcesso.deadLine -=1;
+            //     }
+            // });
 
             if (currentProcessor) {
                 var core = config.cores[currentProcessor.id];
@@ -64,45 +105,55 @@ sistemasOperacionais.factory('LeastTimeToGoAlgorithmService', function ($interva
                 if (core.interval == false) {
                     core.interval = $interval(function () {
 
+                      if(processo.state != 'Abortado' && ltg.aptos.indexOf(processo) < 0){
+                        ltg.aptos.push(processo);
+                      }
+
                         // Decrementando o DeadLine dos processos
-                        ltg.filaDePrioridade.forEach(function (eachProcesso) {
-                            if(eachProcesso.state != 'Executando' && eachProcesso.deadLine == 0){
-                                eachProcesso.state = 'Abortado';
-                                eachProcesso.progressStyle = 'danger';
-                                eachProcesso.progress = 100;
-                            }else{
-                                eachProcesso.deadLine -=1;
-                            }
-                        })
-                        // Verifica se o core esta executando, verifica se o estado do processo nao eh abortado.
-                        if(core.tempo > 0 && processo.state != 'Abortado'){
-                            var coreTempo = core.tempo - 1;
-                            if(coreTempo < 0){
-                                core.tempo = 0;
-                            }else{
-                                core.tempo --;
-                            }
-                            processo.state = 'Executando';
-                            processo.progressStyle = 'default';
-                            processo.tempoExecutado += 1;
-                            processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
-                            //Processo sera executado ate o fim sem aguardar (Algoritmo nao preemptivo)
-                        }else if(processo.tempoExecutado == processo.tempoTotal){
-                            $interval.cancel(core.interval);
-                            ltg.coresLiberados.splice(currentProcessor.id, 0, currentProcessor);
-                            core.state = 'Parado';
-                            core.processo = undefined;
-                            core.interval = false;
-                            core.tempo = 0;
-                            processo.progress = 100;
-                            processo.state = 'Concluido';
-                            processo.progressStyle = 'success';
+
+                        if(processo.state == 'Abortado' || processo.deadLine == 0){
+                          ltg.aptos.splice(ltg.aptos.indexOf(processo),1);
+                          $interval.cancel(core.interval);
+                          ltg.coresLiberados.splice(currentProcessor.id, 0, currentProcessor);
+                          core.state = 'Parado';
+                          core.processo = undefined;
+                          core.interval = false;
+                          core.tempo = 0;
+                        }else{
+                          // Verifica se o core esta executando, verifica se o estado do processo nao eh abortado.
+                          if(core.tempo > 0){
+                              var coreTempo = core.tempo - 1;
+                              if(coreTempo < 0){
+                                  core.tempo = 0;
+                              }else{
+                                  core.tempo --;
+                              }
+                              processo.state = 'Executando';
+                              processo.progressStyle = 'default';
+                              processo.tempoExecutado += 1;
+                              processo.progress = Math.floor((processo.tempoExecutado / processo.tempoTotal) * 100);
+                              //Processo sera executado ate o fim sem aguardar (Algoritmo nao preemptivo)
+                          }else if(processo.tempoExecutado == processo.tempoTotal){
+                              ltg.aptos.splice(ltg.aptos.indexOf(processo),1);
+                              $interval.cancel(core.interval);
+                              ltg.coresLiberados.splice(currentProcessor.id, 0, currentProcessor);
+                              core.state = 'Parado';
+                              core.processo = undefined;
+                              core.interval = false;
+                              core.tempo = 0;
+                              processo.progress = 100;
+                              processo.state = 'Concluido';
+                              processo.progressStyle = 'success';
+                          }
                         }
                     }, 1000);
                 }
             }else if(processo.state != 'Executando'){
                 ltg.filaDePrioridade.push(processo);
-                insertionSort(ltg.filaDePrioridade)
+                ltg.filaDePrioridade.sort(function(a,b){
+                  return a.deadLine - b.deadLine;
+                });
+                // insertionSort(ltg.filaDePrioridade)
             }
         }
 
